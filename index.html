@@ -16,8 +16,8 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #0a0c10 !important;  /* ПРИНУДИТЕЛЬНЫЙ ТЁМНЫЙ ФОН */
-            color: #ffffff !important;
+            background: #0a0c10;
+            color: #ffffff;
             min-height: 100vh;
             padding: 16px;
             padding-bottom: 80px;
@@ -28,13 +28,65 @@
             margin: 0 auto;
         }
         
-        /* Убираем все зависимости от tg-theme, делаем фиксированные цвета */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 16px 0;
+        }
+        
+        .logo-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-icon svg {
+            width: 34px;
+            height: 34px;
+        }
+        
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #a855f7, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        
         .card {
             background: #15171e;
             border-radius: 24px;
             padding: 20px;
             margin-bottom: 16px;
             border: 1px solid #2a2e3a;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
         }
         
         .btn {
@@ -50,24 +102,67 @@
             transition: opacity 0.2s, transform 0.1s;
         }
         
+        .btn:active {
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+        
         .btn-secondary {
             background: #252a35;
             color: #ffffff;
             border: 1px solid #3a3f4a;
         }
         
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8a8f9e;
+        }
+        
         input, select, textarea {
+            width: 100%;
+            padding: 14px;
             background: #0a0c10;
             border: 1px solid #2a2e3a;
+            border-radius: 14px;
             color: #ffffff;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border 0.2s;
         }
         
         input:focus, select:focus, textarea:focus {
+            outline: none;
             border-color: #a855f7;
         }
         
+        input#amount, input#dealIdInput {
+            font-size: 18px;
+            padding: 16px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
         .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
             background: #0a0c10;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
         }
         
         .radio-option.selected {
@@ -75,31 +170,110 @@
             border: 1px solid rgba(168, 85, 247, 0.5);
         }
         
+        .radio-option input {
+            width: 18px;
+            height: 18px;
+            accent-color: #a855f7;
+        }
+        
+        .radio-option-content {
+            flex: 1;
+        }
+        
+        .radio-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .radio-desc {
+            font-size: 12px;
+            color: #8a8f9e;
+        }
+        
+        .currency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
         .currency-item {
             background: #0a0c10;
             border: 1px solid #2a2e3a;
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
         }
         
         .currency-item.selected {
             background: #a855f7;
+            border-color: #a855f7;
+        }
+        
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         .step-icon {
+            width: 40px;
+            height: 40px;
             background: #252a35;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
         }
         
-        .support-link {
-            color: #a855f7;
+        .step-icon.active {
+            background: #a855f7;
         }
         
-        .wallet-item, .deal-history-item {
-            background: #0a0c10;
-            border: 1px solid #2a2e3a;
+        .step-icon.completed {
+            background: #22c55e;
         }
         
-        /* Остальные стили остаются без изменений */
-        .hidden { display: none; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .step-desc {
+            font-size: 12px;
+            color: #8a8f9e;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
         .mt-3 { margin-top: 16px; }
         .mb-2 { margin-bottom: 8px; }
         .text-center { text-align: center; }
@@ -166,9 +340,11 @@
         }
         
         .wallet-item {
+            background: #0a0c10;
             border-radius: 14px;
             padding: 12px;
             margin-bottom: 8px;
+            border: 1px solid #2a2e3a;
         }
         .wallet-type {
             font-weight: 600;
@@ -190,6 +366,7 @@
         }
         
         .deal-history-item {
+            background: #0a0c10;
             border-radius: 14px;
             padding: 12px;
             margin-bottom: 8px;
@@ -214,181 +391,29 @@
             color: #a855f7;
         }
         
-        .header {
+        .deal-id-display {
+            background: #0a0c10;
+            border-radius: 14px;
+            padding: 12px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 32px;
-            padding: 16px 0;
-        }
-        
-        .logo-icon {
-            width: 52px;
-            height: 52px;
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
-            border-radius: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .logo-icon svg {
-            width: 34px;
-            height: 34px;
-        }
-        
-        .logo-text h1 {
-            font-size: 24px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ffffff, #a855f7, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
-        }
-        
-        .logo-sub {
-            font-size: 11px;
-            color: #6b7280;
-            margin-top: 2px;
-        }
-        
-        .card-header {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            gap: 8px;
+            gap: 12px;
+            border: 1px solid #2a2e3a;
         }
         
-        .card-title {
+        .deal-id-code {
+            font-family: monospace;
             font-size: 18px;
             font-weight: 600;
+            color: #a855f7;
         }
         
-        .radio-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 8px;
-        }
-        
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .radio-option input {
-            width: 18px;
-            height: 18px;
-            accent-color: #a855f7;
-        }
-        
-        .radio-option-content {
-            flex: 1;
-        }
-        
-        .radio-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .radio-desc {
+        .hint-text {
             font-size: 12px;
-            color: #8a8f9e;
-        }
-        
-        .currency-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            color: #6b7280;
             margin-top: 8px;
-        }
-        
-        .currency-item {
-            border-radius: 14px;
-            padding: 12px;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .progress-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-top: 20px;
-        }
-        
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .step-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: all 0.3s;
-        }
-        
-        .step-icon.active {
-            background: #a855f7;
-        }
-        
-        .step-icon.completed {
-            background: #22c55e;
-        }
-        
-        .step-content {
-            flex: 1;
-        }
-        
-        .step-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .step-desc {
-            font-size: 12px;
-            color: #8a8f9e;
-        }
-        
-        .input-group {
-            margin-bottom: 16px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #8a8f9e;
-        }
-        
-        .copy-link {
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        
-        .copy-link:hover {
-            opacity: 0.7;
         }
     </style>
 </head>
@@ -409,6 +434,7 @@
                 <span class="card-title">Безопасные сделки</span>
             </div>
             <button class="btn" id="createDealBtn">Создать сделку</button>
+            <button class="btn btn-secondary mt-3" id="joinDealBtn">Присоединиться к сделке</button>
         </div>
         
         <div class="card">
@@ -474,6 +500,22 @@
         </div>
     </div>
     
+    <!-- ЭКРАН ПРИСОЕДИНЕНИЯ К СДЕЛКЕ -->
+    <div id="joinDealScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromJoin" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Присоединиться к сделке</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="input-group">
+                <label>🔑 Введите ID сделки</label>
+                <input type="text" id="joinDealIdInput" placeholder="Например: #AbCdEfGh1234" style="font-size: 16px; padding: 14px;">
+            </div>
+            <button class="btn" id="submitJoinDealBtn">Присоединиться</button>
+        </div>
+    </div>
+    
     <!-- ЭКРАН ИНФОРМАЦИИ -->
     <div id="infoScreen" class="hidden">
         <div class="flex-between" style="margin-bottom: 20px;">
@@ -487,7 +529,7 @@
             <strong>Как это работает:</strong>
             <ul>
                 <li>Вы создаёте сделку как продавец</li>
-                <li>Покупатель присоединяется по ссылке</li>
+                <li>Покупатель присоединяется по ID сделки</li>
                 <li>Покупатель оплачивает — деньги в безопасности</li>
                 <li>Админ подтверждает оплату</li>
                 <li>Вы отправляете NFT</li>
@@ -746,7 +788,7 @@
             
             <div class="input-group mt-3">
                 <label>Сумма</label>
-                <input type="number" id="amount" placeholder="10.5" step="0.01">
+                <input type="number" id="amount" placeholder="10.5" step="0.01" style="font-size: 18px; padding: 16px;">
                 <div style="font-size: 12px; color: #8a8f9e; margin-top: 4px;">Минимальная сумма: 0.1</div>
             </div>
             
@@ -807,10 +849,6 @@
                 <span>Создана</span>
                 <span id="createdDate">—</span>
             </div>
-            <div class="flex-between">
-                <span>ID сделки</span>
-                <span id="dealIdValue" style="font-family: monospace; cursor: pointer;" class="copy-link">—</span>
-            </div>
         </div>
         
         <div class="card">
@@ -860,7 +898,16 @@
             </div>
         </div>
         
-        <button class="btn btn-secondary" id="inviteBuyerBtn">Пригласить покупателя</button>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">ID сделки</span>
+            </div>
+            <div class="deal-id-display">
+                <span class="deal-id-code" id="dealIdValue">—</span>
+                <button id="copyDealIdBtn" class="btn" style="width: auto; padding: 10px 16px;">📋 Копировать</button>
+            </div>
+            <div class="hint-text">отправьте ID сделки покупателю чтобы присоединиться к сделке</div>
+        </div>
     </div>
     
     <!-- ФИНАЛЬНЫЙ ЭКРАН -->
@@ -879,7 +926,6 @@
     tg.expand();
     tg.ready();
     
-    // ПРИНУДИТЕЛЬНАЯ ТЁМНАЯ ТЕМА
     document.body.style.backgroundColor = '#0a0c10';
     document.body.style.color = '#ffffff';
     
@@ -1042,23 +1088,43 @@
         }
     }
     
-    // ========== ПРИГЛАШЕНИЕ ПОКУПАТЕЛЯ ==========
-    function inviteBuyer() {
+    // ========== ПРИСОЕДИНЕНИЕ К СДЕЛКЕ ==========
+    function joinDeal() {
+        const dealId = document.getElementById('joinDealIdInput').value.trim();
+        if (!dealId) {
+            tg.showPopup({ title: 'Ошибка', message: 'Введите ID сделки', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        
+        const deal = deals.find(d => d.id === dealId);
+        if (!deal) {
+            tg.showPopup({ title: 'Ошибка', message: 'Сделка не найдена', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        
+        currentDeal = deal;
+        
+        document.getElementById('dealNameValue').textContent = currentDeal.name;
+        document.getElementById('dealAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        document.getElementById('sellerName').textContent = currentDeal.sellerUsername;
+        document.getElementById('buyerName').textContent = currentUser.username ? `@${currentUser.username}` : `id${currentUser.id}`;
+        document.getElementById('createdDate').textContent = currentDeal.createdAt;
+        document.getElementById('dealIdValue').textContent = currentDeal.id;
+        
+        dealProgress = 1;
+        updateProgressDisplay();
+        
+        showScreen('progress');
+    }
+    
+    // ========== КОПИРОВАНИЕ ID ==========
+    function copyDealId() {
         if (!currentDeal) {
             tg.showPopup({ title: 'Ошибка', message: 'Сначала создайте сделку', buttons: [{ type: 'ok' }] });
             return;
         }
-        const botUsername = 'TrustZipperBot';
-        const cleanId = currentDeal.id.replace('#', '');
-        const link = `https://t.me/${botUsername}?start=deal_${cleanId}`;
-        
-        tg.sendData(JSON.stringify({ action: 'copy_deal_link', link: link, deal_id: currentDeal.id }));
-        
-        tg.showPopup({
-            title: 'Ссылка готова',
-            message: `Ссылка для покупателя:\n${link}\n\nСкопируйте её и отправьте покупателю.\n\nПосле перехода покупателя его username появится в поле "Покупатель".`,
-            buttons: [{ type: 'ok' }]
-        });
+        navigator.clipboard.writeText(currentDeal.id);
+        tg.showPopup({ title: 'Скопировано', message: `ID сделки ${currentDeal.id} скопирован`, buttons: [{ type: 'ok' }] });
     }
     
     // ========== ОБРАБОТКА ДАННЫХ ОТ БОТА ==========
@@ -1081,14 +1147,6 @@
                         case 'completed': dealProgress = 4; updateDealStatus(currentDeal.id, 'completed'); updateProgressDisplay(); setTimeout(() => showScreen('success'), 500); break;
                     }
                     updateProgressDisplay();
-                }
-            } else if (data.action === 'deal_info_response') {
-                if (data.buyer_username && data.buyer_username !== 'Ожидается') {
-                    document.getElementById('buyerName').textContent = data.buyer_username;
-                    if (dealProgress === 0 && currentDeal && currentDeal.id === data.deal_id) {
-                        dealProgress = 1;
-                        updateProgressDisplay();
-                    }
                 }
             }
         } catch (e) { console.error('Ошибка обработки данных:', e); }
@@ -1186,13 +1244,6 @@
         updateProgressDisplay();
         
         showScreen('progress');
-        
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => {
-            if (currentDeal && currentDeal.status === 'waiting_buyer') {
-                tg.sendData(JSON.stringify({ action: 'get_deal_info', deal_id: currentDeal.id }));
-            } else if (updateInterval) { clearInterval(updateInterval); updateInterval = null; }
-        }, 3000);
     }
     
     function updateProgressDisplay() {
@@ -1227,28 +1278,6 @@
                 }
             });
         }
-    }
-    
-    function copyDealId() {
-        if (currentDeal) {
-            navigator.clipboard.writeText(currentDeal.id);
-            tg.showPopup({ title: 'Скопировано', message: `ID сделки ${currentDeal.id} скопирован`, buttons: [{ type: 'ok' }] });
-        }
-    }
-    
-    // ========== ОБРАБОТКА ПАРАМЕТРА START ПРИ ОТКРЫТИИ ==========
-    const urlParams = new URLSearchParams(window.location.search);
-    const startParam = urlParams.get('start');
-    if (startParam && startParam.startsWith('deal_')) {
-        const dealId = startParam.replace('deal_', '');
-        tg.sendData(JSON.stringify({
-            action: 'get_deal_info',
-            deal_id: dealId,
-            is_buyer: true
-        }));
-        setTimeout(() => {
-            if (screens.progress) showScreen('progress');
-        }, 500);
     }
     
     // ========== ИКОНКИ ==========
@@ -1311,7 +1340,12 @@
     function renderWorkIcon() {
         const container = document.getElementById('workIcon');
         if (!container) return;
-        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.2729 12.7352C19.6859 12.7662 19.9949 13.1272 19.9639 13.5402L19.7739 16.0492C19.6169 18.1192 17.8699 19.7402 15.7949 19.7402H4.1949C2.1199 19.7402 0.3729 18.1192 0.2159 16.0492L0.0259 13.5402C-0.0051 13.1272 0.3049 12.7662 0.7179 12.7352C1.1329 12.7202 1.4909 13.0132 1.5229 13.4272L1.7119 15.9352C1.8099 17.2272 2.8999 18.2402 4.1949 18.2402H15.7949C17.0899 18.2402 18.1809 17.2272 18.2779 15.9352L18.4679 13.4272C18.4999 13.0132 18.8669 12.7192 19.2729 12.7352Z" fill="currentColor"/><path d="M11.2851 0.0001C12.788 0.0001 14.0332 1.12636 14.2207 2.57913L16.1902 2.58C18.2862 2.58 19.9902 4.289 19.9902 6.391V9.83C19.9902 10.097 19.8482 10.343 19.6192 10.477C17.1509 11.9225 14.0241 12.7656 10.7447 12.8781L10.7451 14.6767C10.7451 15.0907 10.4091 15.4267 9.9951 15.4267C9.5811 15.4267 9.2451 15.0907 9.2451 14.6767L9.24445 12.8783C5.96838 12.7669 2.84136 11.9236 0.3712 10.477C0.1412 10.343 0.0002 10.097 0.0002 9.83V6.381C0.0002 4.285 1.7092 2.58 3.8102 2.58L5.76951 2.57913C5.95704 1.12636 7.20216 0.0001 8.7051 0.0001H11.2851Z" fill="currentColor"/><path d="M16.1902 4.08H3.8102C2.5362 4.08 1.5002 5.112 1.5002 6.381V9.393C3.87391 10.6828 6.86643 11.3896 9.98119 11.391L9.9951 11.3897L10.0062 11.3901L10.4824 11.3851C13.4282 11.315 16.2383 10.6161 18.4902 9.393V6.391C18.4902 5.116 17.4592 4.08 16.1902 4.08Z" fill="currentColor"/><path d="M11.2851 1.5001H8.7051C8.03176 1.5001 7.46336 1.95837 7.29545 2.57938H12.6947C12.5268 1.95837 11.9584 1.5001 11.2851 1.5001Z" fill="currentColor"/></svg>`;
+        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11.9612 16.5168V13.8888" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M21.0895 11.4777L21.0605 11.4987C18.6385 12.9907 15.4405 13.8917 11.9565 13.8917C8.47252 13.8917 5.28352 12.9907 2.86252 11.4987L2.83252 11.4777" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M2.75024 13.3507C2.75024 7.19871 5.05324 5.14771 11.9612 5.14771C18.8702 5.14771 21.1722 7.19871 21.1722 13.3507C21.1722 19.5027 18.8702 21.5537 11.9612 21.5537C5.05324 21.5537 2.75024 19.5027 2.75024 13.3507Z" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M15.2237 5.36932V4.73932C15.2237 3.47532 14.3007 2.45032 13.1637 2.45032H10.7587C9.62173 2.45032 8.69873 3.47532 8.69873 4.73932V5.36932" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>`;
     }
     
     function renderNotificationIcon() {
@@ -1335,6 +1369,7 @@
     // ========== НАВИГАЦИЯ ==========
     const screens = {
         main: document.getElementById('mainScreen'),
+        join: document.getElementById('joinDealScreen'),
         info: document.getElementById('infoScreen'),
         support: document.getElementById('supportScreen'),
         referral: document.getElementById('referralScreen'),
@@ -1362,6 +1397,11 @@
     }
     
     // ========== ОБРАБОТЧИКИ ==========
+    document.getElementById('createDealBtn').onclick = () => showScreen('create');
+    document.getElementById('joinDealBtn').onclick = () => showScreen('join');
+    document.getElementById('submitJoinDealBtn').onclick = joinDeal;
+    document.getElementById('copyDealIdBtn').onclick = copyDealId;
+    
     document.querySelectorAll('[data-action="info"]').forEach(el => {
         el.addEventListener('click', () => showScreen('info'));
     });
@@ -1390,6 +1430,19 @@
     document.querySelectorAll('[data-wallet-action="list_wallets"]').forEach(el => {
         el.addEventListener('click', () => showScreen('listWallets'));
     });
+    
+    document.getElementById('backToMainFromJoin').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromInfo').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromSupport').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromCreate').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromProgress').onclick = () => {
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = null;
+        showScreen('main');
+    };
+    document.getElementById('backToMainFromSuccess').onclick = () => showScreen('main');
+    document.getElementById('cancelCreateBtn').onclick = () => showScreen('main');
+    document.getElementById('submitDealBtn').onclick = createDeal;
     
     document.getElementById('backToWalletFromCard')?.addEventListener('click', () => showScreen('wallet'));
     document.getElementById('backToWalletFromCrypto')?.addEventListener('click', () => showScreen('wallet'));
@@ -1451,22 +1504,6 @@
         tg.showPopup({ title: 'Успех', message: 'TON кошелек сохранен', buttons: [{ type: 'ok' }] });
         showScreen('wallet');
     });
-    
-    // ОБРАБОТЧИКИ КНОПОК
-    document.getElementById('createDealBtn').onclick = () => showScreen('create');
-    document.getElementById('backToMainFromInfo').onclick = () => showScreen('main');
-    document.getElementById('backToMainFromSupport').onclick = () => showScreen('main');
-    document.getElementById('backToMainFromCreate').onclick = () => showScreen('main');
-    document.getElementById('cancelCreateBtn').onclick = () => showScreen('main');
-    document.getElementById('backToMainFromProgress').onclick = () => {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = null;
-        showScreen('main');
-    };
-    document.getElementById('backToMainFromSuccess').onclick = () => showScreen('main');
-    document.getElementById('submitDealBtn').onclick = createDeal;
-    document.getElementById('dealIdValue').onclick = copyDealId;
-    document.getElementById('inviteBuyerBtn').onclick = inviteBuyer;
     
     // ВЫБОР ВАЛЮТЫ
     document.querySelectorAll('.currency-item').forEach(el => {
