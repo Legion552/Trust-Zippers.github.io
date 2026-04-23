@@ -923,6 +923,74 @@
         </div>
     </div>
 
+    <!-- ЭКРАН "СДЕЛКА УСПЕШНО СОЗДАНА" -->
+    <div id="dealCreatedScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromDealCreated" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="card text-center">
+            <!-- QR-код по центру -->
+            <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10.0558 10.0338V3.22778H3.24976V10.0338H10.0558Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M13.9441 20.7271H20.7501V13.9211H13.9441V20.7271Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M16.3751 3.22778H13.9451V7.34778" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M20.7501 4.92878V3.22778H19.0491" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M20.7501 7.60278V10.0328H19.0491" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M13.9451 10.0327H16.1651" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M16.2673 5.59253V7.81153H18.0963" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M18.6936 5.58276V5.59276" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M6.6521 6.58163V6.67863" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M6.6521 17.2755V17.3725" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M17.3474 17.2755V17.3725" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M3.24976 13.9211V20.7271H10.0558V13.9211H3.24976Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                </svg>
+            </div>
+            
+            <!-- НАДПИСЬ ПО ЦЕНТРУ БЕЗ СИМВОЛОВ -->
+            <h3 style="color: #a855f7; margin-bottom: 24px; text-align: center;">Сделка успешно создана!</h3>
+            
+            <!-- ИНФОРМАЦИЯ БЕЗ ИКОНОК -->
+            <div style="margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Сумма:</span>
+                    <span id="dealCreatedAmount" style="font-weight: 700;">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Описание:</span>
+                    <span id="dealCreatedDesc" style="font-weight: 500;">—</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>ID сделки:</span>
+                    <span id="dealCreatedId" style="font-family: monospace;">—</span>
+                </div>
+            </div>
+            
+            <hr style="margin: 16px 0; border-color: #2a2e3a;">
+            
+            <p style="margin-bottom: 12px;">После отправки NFT деньги поступят автоматически</p>
+            <p style="margin-bottom: 16px;">Средства защищены гарантией Trust Zipper</p>
+            
+            <div style="margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <span>Ссылка для оплаты:</span>
+                    <input type="text" id="paymentLinkInput" readonly style="flex: 1; font-size: 12px; padding: 10px;" value="">
+                    <button id="copyPaymentLinkBtn" class="btn" style="width: auto; padding: 10px 16px;">Копировать</button>
+                </div>
+            </div>
+            
+            <p style="font-size: 12px; color: #6b7280; margin-top: 12px;">
+                Поделитесь ссылкой с покупателем<br>
+                Оплата проходит за 1-3 минуты<br>
+                Поддержка: <a href="https://t.me/huntsboss" style="color: #a855f7;">@huntsboss</a>
+            </p>
+            
+            <button class="btn mt-3" id="backToMainFromDealCreatedBtn">На главную</button>
+        </div>
+    </div>
+
     <!-- ФИНАЛЬНЫЙ ЭКРАН -->
     <div id="successScreen" class="hidden">
         <div class="success-screen">
@@ -1096,9 +1164,16 @@
         document.getElementById('createdDate').textContent = deal.createdAt;
         document.getElementById('dealIdValue').textContent = deal.id;
 
-        dealProgress = 1;
-        updateProgressDisplay();
-        showScreen('progress');
+        // Если это продавец (создатель) - показываем экран с QR-кодом и ссылкой
+        if (deal.sellerId === currentUser.id) {
+            dealProgress = 1;
+            updateProgressDisplay();
+            showScreen('dealCreated');
+        } else {
+            dealProgress = 1;
+            updateProgressDisplay();
+            showScreen('progress');
+        }
 
         tg.sendData(JSON.stringify({
             action: 'join_deal',
@@ -1116,6 +1191,15 @@
         }
         navigator.clipboard.writeText(currentDeal.id);
         tg.showPopup({ title: 'Скопировано', message: `ID сделки ${currentDeal.id} скопирован`, buttons: [{ type: 'ok' }] });
+    }
+
+    // ========== КОПИРОВАНИЕ ССЫЛКИ ДЛЯ ОПЛАТЫ ==========
+    function copyPaymentLink() {
+        const linkInput = document.getElementById('paymentLinkInput');
+        if (linkInput && linkInput.value) {
+            navigator.clipboard.writeText(linkInput.value);
+            tg.showPopup({ title: 'Скопировано', message: 'Ссылка для оплаты скопирована', buttons: [{ type: 'ok' }] });
+        }
     }
 
     // ========== ОБРАБОТКА ДАННЫХ ОТ БОТА ==========
@@ -1228,6 +1312,13 @@
 
         saveDeal(currentDeal);
 
+        // Обновляем экран "Сделка успешно создана"
+        document.getElementById('dealCreatedAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        document.getElementById('dealCreatedDesc').textContent = currentDeal.name;
+        document.getElementById('dealCreatedId').textContent = currentDeal.id;
+        const paymentLink = `https://t.me/${BOT_USERNAME}?start=pay_${currentDeal.id.replace('#', '')}`;
+        document.getElementById('paymentLinkInput').value = paymentLink;
+
         document.getElementById('dealNameValue').textContent = currentDeal.name;
         document.getElementById('dealAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
         document.getElementById('sellerName').textContent = currentDeal.sellerUsername;
@@ -1237,7 +1328,9 @@
 
         dealProgress = 0;
         updateProgressDisplay();
-        showScreen('progress');
+        
+        // Продавец сразу видит экран с QR-кодом
+        showScreen('dealCreated');
     }
 
     function updateProgressDisplay() {
@@ -1335,6 +1428,7 @@
         history: document.getElementById('historyScreen'),
         create: document.getElementById('createDealScreen'),
         progress: document.getElementById('dealProgressScreen'),
+        dealCreated: document.getElementById('dealCreatedScreen'),
         success: document.getElementById('successScreen')
     };
 
@@ -1351,6 +1445,7 @@
     document.getElementById('joinDealBtn').onclick = () => showScreen('join');
     document.getElementById('submitJoinDealBtn').onclick = joinDeal;
     document.getElementById('copyDealIdBtn').onclick = copyDealId;
+    document.getElementById('copyPaymentLinkBtn').onclick = copyPaymentLink;
 
     document.querySelectorAll('[data-action="info"]').forEach(el => el.addEventListener('click', () => showScreen('info')));
     document.querySelectorAll('[data-action="support"]').forEach(el => el.addEventListener('click', () => showScreen('support')));
@@ -1369,6 +1464,8 @@
     document.getElementById('backToMainFromCreate').onclick = () => showScreen('main');
     document.getElementById('backToMainFromProgress').onclick = () => { if (updateInterval) clearInterval(updateInterval); updateInterval = null; showScreen('main'); };
     document.getElementById('backToMainFromSuccess').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromDealCreated').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromDealCreatedBtn').onclick = () => showScreen('main');
     document.getElementById('cancelCreateBtn').onclick = () => showScreen('main');
     document.getElementById('submitDealBtn').onclick = createDeal;
 
