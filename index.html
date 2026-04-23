@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Trust Zipper</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0c10 !important;  /* ПРИНУДИТЕЛЬНЫЙ ТЁМНЫЙ ФОН */
+            color: #ffffff !important;
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        /* Убираем все зависимости от tg-theme, делаем фиксированные цвета */
+        .card {
+            background: #15171e;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #2a2e3a;
+        }
+        
+        .btn {
+            background: #a855f7;
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        
+        .btn-secondary {
+            background: #252a35;
+            color: #ffffff;
+            border: 1px solid #3a3f4a;
+        }
+        
+        input, select, textarea {
+            background: #0a0c10;
+            border: 1px solid #2a2e3a;
+            color: #ffffff;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: #a855f7;
+        }
+        
+        .radio-option {
+            background: #0a0c10;
+        }
+        
+        .radio-option.selected {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+        
+        .currency-item {
+            background: #0a0c10;
+            border: 1px solid #2a2e3a;
+        }
+        
+        .currency-item.selected {
+            background: #a855f7;
+        }
+        
+        .step-icon {
+            background: #252a35;
+        }
+        
+        .support-link {
+            color: #a855f7;
+        }
+        
+        .wallet-item, .deal-history-item {
+            background: #0a0c10;
+            border: 1px solid #2a2e3a;
+        }
+        
+        /* Остальные стили остаются без изменений */
+        .hidden { display: none; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mt-3 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; }
+        .text-center { text-align: center; }
+        
+        .success-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+        }
+        
+        .success-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .success-text {
+            color: #8a8f9e;
+            margin-bottom: 32px;
+        }
+        
+        .deal-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #a855f7;
+        }
+        
+        .radio-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .radio-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .info-text, .support-text {
+            line-height: 1.6;
+        }
+        .info-text h4, .support-text h4 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: #a855f7;
+        }
+        .info-text ul, .support-text ul {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+        .info-text li, .support-text li {
+            margin-bottom: 6px;
+        }
+        
+        .wallet-item {
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .wallet-type {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #a855f7;
+        }
+        .wallet-address {
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            color: #8a8f9e;
+        }
+        .delete-wallet {
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        
+        .deal-history-item {
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #a855f7;
+        }
+        .deal-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .status-completed {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+        .status-waiting {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+        .status-paid {
+            background: #a855f720;
+            color: #a855f7;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 16px 0;
+        }
+        
+        .logo-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-icon svg {
+            width: 34px;
+            height: 34px;
+        }
+        
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #a855f7, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .radio-option input {
+            width: 18px;
+            height: 18px;
+            accent-color: #a855f7;
+        }
+        
+        .radio-option-content {
+            flex: 1;
+        }
+        
+        .radio-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .radio-desc {
+            font-size: 12px;
+            color: #8a8f9e;
+        }
+        
+        .currency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .currency-item {
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+        
+        .step-icon.active {
+            background: #a855f7;
+        }
+        
+        .step-icon.completed {
+            background: #22c55e;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .step-desc {
+            font-size: 12px;
+            color: #8a8f9e;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8a8f9e;
+        }
+        
+        .copy-link {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .copy-link:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <!-- ГЛАВНЫЙ ЭКРАН -->
+    <div id="mainScreen">
+        <div class="header">
+            <div class="logo-icon" id="giftIcon"></div>
+            <div class="logo-text">
+                <h1>Trust Zipper</h1>
+                <div class="logo-sub">Безопасные P2P-сделки</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Безопасные сделки</span>
+            </div>
+            <button class="btn" id="createDealBtn">Создать сделку</button>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Сервисы</span>
+            </div>
+            <div class="radio-group" style="gap: 8px;">
+                <div class="radio-option" data-action="info">
+                    <div class="radio-option-content">
+                        <div class="radio-title">
+                            <span class="radio-icon" id="infoIcon"></span>
+                            Информация
+                        </div>
+                    </div>
+                </div>
+                <div class="radio-option" data-action="support">
+                    <div class="radio-option-content">
+                        <div class="radio-title">
+                            <span class="radio-icon" id="profileIcon"></span>
+                            Поддержка
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Мои данные</span>
+            </div>
+            <div class="radio-group" style="gap: 8px;">
+                <div class="radio-option" data-action="history">
+                    <div class="radio-option-content">
+                        <div class="radio-title">
+                            <span class="radio-icon" id="chartIcon"></span>
+                            История моих сделок
+                        </div>
+                    </div>
+                </div>
+                <div class="radio-option" data-action="wallet">
+                    <div class="radio-option-content">
+                        <div class="radio-title">
+                            <span class="radio-icon" id="walletIcon"></span>
+                            Настроить кошелек
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Дополнительно</span>
+            </div>
+            <div class="radio-option" data-action="referral">
+                <div class="radio-option-content">
+                    <div class="radio-title">
+                        <span class="radio-icon" id="addUserIcon"></span>
+                        Реферальная программа
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ИНФОРМАЦИИ -->
+    <div id="infoScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromInfo" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Информация</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card info-text">
+            <h4>Trust Zipper — безопасные сделки</h4>
+            <br>
+            <strong>Как это работает:</strong>
+            <ul>
+                <li>Вы создаёте сделку как продавец</li>
+                <li>Покупатель присоединяется по ссылке</li>
+                <li>Покупатель оплачивает — деньги в безопасности</li>
+                <li>Админ подтверждает оплату</li>
+                <li>Вы отправляете NFT</li>
+                <li>Покупатель подтверждает получение</li>
+            </ul>
+            <strong>Гарантии:</strong>
+            <ul>
+                <li>Залоговый фонд: 100€</li>
+                <li>Все сделки под защитой администрации</li>
+                <li>В случае обмана — 100% компенсация</li>
+                <li>При доказанном мошенничестве — возврат в двойном размере</li>
+            </ul>
+            <strong>Важно!</strong> Никогда не переводите деньги напрямую.<br>
+            Все платежи только через гаранта!
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ПОДДЕРЖКИ -->
+    <div id="supportScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromSupport" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Поддержка</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card support-text">
+            <h4>Техническая поддержка Trust Zipper</h4>
+            <br>
+            <strong>По всем вопросам:</strong> <a href="https://t.me/huntsboss" class="support-link" target="_blank">@huntsboss</a><br>
+            <strong>Ссылка:</strong> <a href="https://t.me/huntsboss" class="support-link" target="_blank">https://t.me/huntsboss</a>
+            <br><br>
+            <strong>Время ответа:</strong> до 5 минут<br>
+            <strong>Режим работы:</strong> 24/7
+            <br><br>
+            <strong>По каким вопросам обращаться:</strong>
+            <ul>
+                <li>Проблемы с оплатой</li>
+                <li>Спорные ситуации</li>
+                <li>Технические неполадки</li>
+                <li>Вывод средств</li>
+                <li>Блокировка аккаунта</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН РЕФЕРАЛЬНОЙ ПРОГРАММЫ -->
+    <div id="referralScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromReferral" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Реферальная программа</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <h4 style="color: #a855f7; margin-bottom: 16px;">Trust Zipper — реферальная система</h4>
+            <p style="margin-bottom: 16px;">Приглашайте друзей и получайте <strong>5%</strong> от их сделок!</p>
+            
+            <div class="input-group">
+                <label>🔗 Ваша реферальная ссылка</label>
+                <div class="flex-between" style="gap: 8px;">
+                    <input type="text" id="referralLinkInput" readonly style="flex: 1; font-size: 12px;" value="Загрузка...">
+                    <button id="copyReferralLinkBtn" class="btn" style="width: auto; padding: 12px 16px;">📋</button>
+                </div>
+            </div>
+            
+            <p style="margin: 16px 0;"><strong>💰 За каждого приглашенного друга вы получаете 5% от суммы его сделок!</strong></p>
+            
+            <strong>Как приглашать:</strong>
+            <ul style="margin: 12px 0 16px 20px;">
+                <li>1. Отправьте ссылку другу</li>
+                <li>2. Он должен перейти по ссылке</li>
+                <li>3. Зарегистрироваться в боте</li>
+                <li>4. Совершить первую сделку</li>
+            </ul>
+            
+            <p style="color: #8a8f9e; font-size: 13px;">💸 Выплаты происходят автоматически после завершения сделок!</p>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН УПРАВЛЕНИЯ КОШЕЛЬКАМИ -->
+    <div id="walletScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromWallet" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Управление кошельками</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📩 Управление реквизитами</span>
+            </div>
+            <div class="radio-group" style="gap: 8px;">
+                <div class="radio-option" data-wallet-action="add_card">
+                    <div class="radio-option-content">
+                        <div class="radio-title">💳 Банковская карта</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-wallet-action="add_crypto">
+                    <div class="radio-option-content">
+                        <div class="radio-title">₿ Криптовалюта</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-wallet-action="add_ton">
+                    <div class="radio-option-content">
+                        <div class="radio-title">👛 TON кошелёк</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-wallet-action="list_wallets">
+                    <div class="radio-option-content">
+                        <div class="radio-title">📋 Мои кошельки</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ДОБАВЛЕНИЯ КАРТЫ -->
+    <div id="addCardScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromCard" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Добавление карты</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <p style="margin-bottom: 16px;">💳 Отправьте номер карты</p>
+            <p style="font-size: 12px; color: #8a8f9e; margin-bottom: 16px;">пример: 1234 5678 9012 3456</p>
+            <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456">
+            <button class="btn mt-3" id="saveCardBtn">Сохранить карту</button>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ВЫБОРА КРИПТОВАЛЮТЫ -->
+    <div id="selectCryptoScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromCrypto" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Выбор криптовалюты</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="radio-group">
+                <div class="radio-option" data-crypto-type="btc">
+                    <div class="radio-option-content">
+                        <div class="radio-title">₿ Bitcoin</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-crypto-type="eth">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Ξ Ethereum</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-crypto-type="usdt">
+                    <div class="radio-option-content">
+                        <div class="radio-title">$ USDT</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ДОБАВЛЕНИЯ КРИПТОКОШЕЛЬКА -->
+    <div id="addCryptoScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToCryptoSelect" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3 id="cryptoScreenTitle">Добавление кошелька</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <p id="cryptoPrompt" style="margin-bottom: 16px;">Введите адрес кошелька:</p>
+            <input type="text" id="cryptoAddress" placeholder="Введите адрес">
+            <button class="btn mt-3" id="saveCryptoBtn">Сохранить кошелек</button>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ДОБАВЛЕНИЯ TON КОШЕЛЬКА -->
+    <div id="addTonScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromTon" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Добавление TON кошелька</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <p style="margin-bottom: 16px;">👛 Введите TON кошелёк:</p>
+            <input type="text" id="tonAddress" placeholder="Введите адрес TON кошелька">
+            <button class="btn mt-3" id="saveTonBtn">Сохранить TON кошелек</button>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН СПИСКА КОШЕЛЬКОВ -->
+    <div id="listWalletsScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromList" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Мои кошельки</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card" id="walletsListContainer">
+            <div id="walletsList">Загрузка...</div>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ИСТОРИИ СДЕЛОК -->
+    <div id="historyScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromHistory" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>История сделок</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card" id="historyListContainer">
+            <div id="historyList">Загрузка...</div>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН СОЗДАНИЯ СДЕЛКИ -->
+    <div id="createDealScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromCreate" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Создание сделки</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        
+        <div class="card">
+            <div class="input-group">
+                <label>Название сделки</label>
+                <input type="text" id="dealName" placeholder="Например: Покупка Plush Pepe #1">
+            </div>
+            
+            <label>Тип сделки</label>
+            <div class="radio-group" id="dealTypeGroup">
+                <div class="radio-option" data-type="normal">
+                    <input type="radio" name="dealType" value="normal" checked>
+                    <div class="radio-option-content">
+                        <div class="radio-title">
+                            <span class="radio-icon" id="workIcon"></span>
+                            Обычная
+                        </div>
+                        <div class="radio-desc">Продажа товара или услуги</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-type="channel">
+                    <input type="radio" name="dealType" value="channel">
+                    <div class="radio-option-content">
+                        <div class="radio-title">
+                            <span class="radio-icon" id="notificationIcon"></span>
+                            Продажа канала
+                        </div>
+                        <div class="radio-desc">Продажа Telegram канала</div>
+                    </div>
+                </div>
+            </div>
+            
+            <label class="mt-3">Валюта сделки</label>
+            <div class="currency-grid" id="currencyGrid">
+                <div class="currency-item" data-currency="TON">💎 TON</div>
+                <div class="currency-item" data-currency="USDT">$ USDT</div>
+                <div class="currency-item" data-currency="RUB">₽ Рубли</div>
+                <div class="currency-item" data-currency="STARS">★ Звёзды</div>
+                <div class="currency-item" data-currency="UAH">₴ Гривны</div>
+                <div class="currency-item" data-currency="EUR">€ Евро</div>
+            </div>
+            
+            <div class="input-group mt-3">
+                <label>Сумма</label>
+                <input type="number" id="amount" placeholder="10.5" step="0.01">
+                <div style="font-size: 12px; color: #8a8f9e; margin-top: 4px;">Минимальная сумма: 0.1</div>
+            </div>
+            
+            <label>Кто оплачивает комиссию 2%?</label>
+            <div class="radio-group" id="feePayerGroup">
+                <div class="radio-option" data-payer="buyer">
+                    <input type="radio" name="feePayer" value="buyer" checked>
+                    <div class="radio-option-content">
+                        <div class="radio-title">Покупатель</div>
+                        <div class="radio-desc">Покупатель платит сумму + комиссию</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-payer="seller">
+                    <input type="radio" name="feePayer" value="seller">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Продавец</div>
+                        <div class="radio-desc">Комиссия вычитается из суммы</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-group mt-3">
+                <label>Доп. информация (необязательно)</label>
+                <textarea id="additionalInfo" rows="2" placeholder="Дополнительная информация о товаре..." maxlength="20"></textarea>
+                <div style="font-size: 12px; color: #8a8f9e;" id="charCount">0 / 20</div>
+            </div>
+            
+            <button class="btn" id="submitDealBtn">Создать сделку</button>
+            <button class="btn btn-secondary mt-3" id="cancelCreateBtn">Отмена</button>
+        </div>
+    </div>
+    
+    <!-- ЭКРАН ПРОГРЕССА СДЕЛКИ -->
+    <div id="dealProgressScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromProgress" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <div style="width: 40px;"></div>
+        </div>
+        
+        <div class="card">
+            <div class="flex-between mb-2">
+                <span class="card-title">Название сделки</span>
+                <span id="dealNameValue" style="font-weight: 500;">—</span>
+            </div>
+            <div class="flex-between mb-2">
+                <span class="card-title">Сумма сделки</span>
+                <span id="dealAmount" class="deal-amount">0</span>
+            </div>
+            <div class="flex-between mb-2">
+                <span>Продавец</span>
+                <span id="sellerName">—</span>
+            </div>
+            <div class="flex-between mb-2">
+                <span>Покупатель</span>
+                <span id="buyerName">Ожидается</span>
+            </div>
+            <div class="flex-between mb-2">
+                <span>Создана</span>
+                <span id="createdDate">—</span>
+            </div>
+            <div class="flex-between">
+                <span>ID сделки</span>
+                <span id="dealIdValue" style="font-family: monospace; cursor: pointer;" class="copy-link">—</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Прогресс сделки</span>
+            </div>
+            
+            <div id="waitingBuyer">
+                <div class="step">
+                    <div class="step-icon" id="step1Icon">⏳</div>
+                    <div class="step-content">
+                        <div class="step-title" id="step1Title">Ожидание покупателя</div>
+                        <div class="step-desc" id="step1Desc">Сделка начнется когда покупатель присоединится</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="progressSteps" class="progress-steps hidden">
+                <div class="step">
+                    <div class="step-icon" id="step2Icon">⏳</div>
+                    <div class="step-content">
+                        <div class="step-title">Ожидание оплаты</div>
+                        <div class="step-desc">Покупатель должен оплатить услуги по указанным реквизитам</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-icon" id="step3Icon">⏳</div>
+                    <div class="step-content">
+                        <div class="step-title">Оплата подтверждена</div>
+                        <div class="step-desc">Продавец может начать выполнение услуги</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-icon" id="step4Icon">⏳</div>
+                    <div class="step-content">
+                        <div class="step-title">Услуга оказана</div>
+                        <div class="step-desc">Покупатель должен подтвердить оказание услуги</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-icon" id="step5Icon">⏳</div>
+                    <div class="step-content">
+                        <div class="step-title">Сделка завершена</div>
+                        <div class="step-desc">Успешно закрыта</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-secondary" id="inviteBuyerBtn">Пригласить покупателя</button>
+    </div>
+    
+    <!-- ФИНАЛЬНЫЙ ЭКРАН -->
+    <div id="successScreen" class="hidden">
+        <div class="success-screen">
+            <div class="success-icon" id="shieldIcon"></div>
+            <div class="success-title">Сделка завершена</div>
+            <div class="success-text">Успешно закрыта</div>
+            <button class="btn" id="backToMainFromSuccess">На главную</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.ready();
+    
+    // ПРИНУДИТЕЛЬНАЯ ТЁМНАЯ ТЕМА
+    document.body.style.backgroundColor = '#0a0c10';
+    document.body.style.color = '#ffffff';
+    
+    try {
+        tg.setBackgroundColor('#0a0c10');
+        tg.setHeaderColor('#0a0c10');
+    } catch(e) {}
+    
+    const currentUser = tg.initDataUnsafe?.user || { 
+        id: Math.floor(Math.random() * 10000),
+        username: 'user_' + Math.floor(Math.random() * 10000),
+        first_name: 'Пользователь' 
+    };
+    
+    // ========== ХРАНЕНИЕ ДАННЫХ ==========
+    let wallets = JSON.parse(localStorage.getItem('trustzipper_wallets')) || {};
+    let deals = JSON.parse(localStorage.getItem('trustzipper_deals')) || [];
+    
+    function saveWallets() {
+        localStorage.setItem('trustzipper_wallets', JSON.stringify(wallets));
+    }
+    
+    function saveDeals() {
+        localStorage.setItem('trustzipper_deals', JSON.stringify(deals));
+    }
+    
+    // ========== ОТОБРАЖЕНИЕ КОШЕЛЬКОВ ==========
+    function renderWalletsList() {
+        const container = document.getElementById('walletsList');
+        if (!container) return;
+        
+        if (Object.keys(wallets).length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">У вас пока нет добавленных кошельков</div>';
+            return;
+        }
+        
+        let html = '';
+        for (const [type, data] of Object.entries(wallets)) {
+            let typeName = '';
+            let icon = '';
+            switch(type) {
+                case 'card': typeName = '💳 Банковская карта'; icon = '💳'; break;
+                case 'btc': typeName = '₿ Bitcoin'; icon = '₿'; break;
+                case 'eth': typeName = 'Ξ Ethereum'; icon = 'Ξ'; break;
+                case 'ton': typeName = '👛 TON кошелёк'; icon = '👛'; break;
+                case 'usdt': typeName = '$ USDT'; icon = '$'; break;
+                default: typeName = type; icon = '📦';
+            }
+            html += `
+                <div class="wallet-item">
+                    <div class="wallet-type">${icon} ${typeName}</div>
+                    <div class="wallet-address">${data.address}</div>
+                    <span class="delete-wallet" data-wallet-type="${type}">🗑 Удалить</span>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        
+        document.querySelectorAll('.delete-wallet').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const walletType = e.target.dataset.walletType;
+                delete wallets[walletType];
+                saveWallets();
+                renderWalletsList();
+                tg.showPopup({ title: 'Удалено', message: 'Кошелек удален', buttons: [{ type: 'ok' }] });
+            });
+        });
+    }
+    
+    // ========== ОТОБРАЖЕНИЕ ИСТОРИИ СДЕЛОК ==========
+    function renderHistoryList() {
+        const container = document.getElementById('historyList');
+        if (!container) return;
+        
+        const userDeals = deals.filter(d => d.sellerId === currentUser.id);
+        
+        if (userDeals.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">У вас пока нет сделок</div>';
+            return;
+        }
+        
+        let html = '';
+        for (const deal of userDeals.reverse()) {
+            let statusText = '';
+            let statusClass = '';
+            switch(deal.status) {
+                case 'completed':
+                    statusText = '✅ Завершена';
+                    statusClass = 'status-completed';
+                    break;
+                case 'paid':
+                    statusText = '🟣 Оплата подтверждена';
+                    statusClass = 'status-paid';
+                    break;
+                case 'waiting_buyer':
+                    statusText = '⏳ Ожидание покупателя';
+                    statusClass = 'status-waiting';
+                    break;
+                default:
+                    statusText = '⏳ В процессе';
+                    statusClass = 'status-waiting';
+            }
+            
+            html += `
+                <div class="deal-history-item">
+                    <div class="flex-between mb-1">
+                        <strong>${deal.name}</strong>
+                        <span class="deal-status ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="flex-between mb-1">
+                        <span>Сумма:</span>
+                        <span>${deal.amount} ${deal.currency}</span>
+                    </div>
+                    <div class="flex-between">
+                        <span>ID:</span>
+                        <span style="font-family: monospace; font-size: 12px;">${deal.id}</span>
+                    </div>
+                    <div style="font-size: 11px; color: #8a8f9e; margin-top: 4px;">${deal.createdAt}</div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    }
+    
+    // ========== СОХРАНЕНИЕ СДЕЛКИ ==========
+    function saveDeal(deal) {
+        deals.push(deal);
+        saveDeals();
+        renderHistoryList();
+        tg.sendData(JSON.stringify({
+            action: 'create_deal',
+            deal: deal
+        }));
+    }
+    
+    function updateDealStatus(dealId, status) {
+        const index = deals.findIndex(d => d.id === dealId);
+        if (index !== -1) {
+            deals[index].status = status;
+            saveDeals();
+            renderHistoryList();
+        }
+    }
+    
+    // ========== РЕФЕРАЛЬНАЯ ПРОГРАММА ==========
+    function updateReferralLink() {
+        const linkInput = document.getElementById('referralLinkInput');
+        if (linkInput) {
+            const botUsername = 'TrustZipperBot';
+            const refLink = `https://t.me/${botUsername}?start=ref_${currentUser.id}`;
+            linkInput.value = refLink;
+        }
+    }
+    
+    function copyReferralLink() {
+        const linkInput = document.getElementById('referralLinkInput');
+        if (linkInput && linkInput.value) {
+            navigator.clipboard.writeText(linkInput.value);
+            tg.showPopup({ title: 'Скопировано', message: 'Реферальная ссылка скопирована', buttons: [{ type: 'ok' }] });
+        }
+    }
+    
+    // ========== ПРИГЛАШЕНИЕ ПОКУПАТЕЛЯ ==========
+    function inviteBuyer() {
+        if (!currentDeal) {
+            tg.showPopup({ title: 'Ошибка', message: 'Сначала создайте сделку', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        const botUsername = 'TrustZipperBot';
+        const cleanId = currentDeal.id.replace('#', '');
+        const link = `https://t.me/${botUsername}?start=deal_${cleanId}`;
+        
+        tg.sendData(JSON.stringify({ action: 'copy_deal_link', link: link, deal_id: currentDeal.id }));
+        
+        tg.showPopup({
+            title: 'Ссылка готова',
+            message: `Ссылка для покупателя:\n${link}\n\nСкопируйте её и отправьте покупателю.\n\nПосле перехода покупателя его username появится в поле "Покупатель".`,
+            buttons: [{ type: 'ok' }]
+        });
+    }
+    
+    // ========== ОБРАБОТКА ДАННЫХ ОТ БОТА ==========
+    tg.onEvent('web_app_data_sent', (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('Получены данные от бота:', data);
+            
+            if (data.action === 'payment_confirmed') {
+                if (currentDeal && currentDeal.id === data.deal_id) {
+                    dealProgress = 2;
+                    updateProgressDisplay();
+                    updateDealStatus(currentDeal.id, 'paid');
+                    tg.showPopup({ title: 'Оплата подтверждена', message: 'Администратор подтвердил оплату. Можете отправлять NFT.', buttons: [{ type: 'ok' }] });
+                }
+            } else if (data.action === 'deal_status_update') {
+                if (currentDeal && currentDeal.id === data.deal_id) {
+                    switch(data.status) {
+                        case 'paid': dealProgress = 2; updateDealStatus(currentDeal.id, 'paid'); break;
+                        case 'completed': dealProgress = 4; updateDealStatus(currentDeal.id, 'completed'); updateProgressDisplay(); setTimeout(() => showScreen('success'), 500); break;
+                    }
+                    updateProgressDisplay();
+                }
+            } else if (data.action === 'deal_info_response') {
+                if (data.buyer_username && data.buyer_username !== 'Ожидается') {
+                    document.getElementById('buyerName').textContent = data.buyer_username;
+                    if (dealProgress === 0 && currentDeal && currentDeal.id === data.deal_id) {
+                        dealProgress = 1;
+                        updateProgressDisplay();
+                    }
+                }
+            }
+        } catch (e) { console.error('Ошибка обработки данных:', e); }
+    });
+    
+    // ========== ОСТАЛЬНЫЕ ФУНКЦИИ ==========
+    let currentDeal = null;
+    let dealProgress = 0;
+    let selectedCurrency = 'USDT';
+    let updateInterval = null;
+    let pendingCryptoType = null;
+    
+    const currencySymbols = {
+        'TON': 'TON',
+        'USDT': 'USDT',
+        'RUB': '₽',
+        'STARS': '★',
+        'UAH': '₴',
+        'EUR': '€'
+    };
+    
+    function generateDealId() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '#';
+        for (let i = 0; i < 12; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+    
+    function formatAmount(amount, currency) {
+        const symbol = currencySymbols[currency] || currency;
+        const formatted = parseFloat(amount).toFixed(2).replace(/\.00$/, '');
+        return `${formatted} ${symbol}`;
+    }
+    
+    function calculateAmountWithFee(amount, feePayer) {
+        if (feePayer === 'buyer') {
+            return amount * 1.02;
+        }
+        return amount;
+    }
+    
+    function getFormattedDate() {
+        const now = new Date();
+        const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+        return `${now.getDate()} ${months[now.getMonth()]} · ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    function createDeal() {
+        const name = document.getElementById('dealName').value;
+        let amount = parseFloat(document.getElementById('amount').value);
+        const dealType = document.querySelector('input[name="dealType"]:checked')?.value || 'normal';
+        const feePayer = document.querySelector('input[name="feePayer"]:checked')?.value || 'buyer';
+        const additionalInfo = document.getElementById('additionalInfo').value;
+        
+        if (!name) {
+            tg.showPopup({ title: 'Ошибка', message: 'Введите название сделки', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        if (!amount || amount < 0.1) {
+            tg.showPopup({ title: 'Ошибка', message: 'Минимальная сумма: 0.1', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        
+        const finalAmount = calculateAmountWithFee(amount, feePayer);
+        const sellerUsername = currentUser.username ? `@${currentUser.username}` : `id${currentUser.id}`;
+        
+        currentDeal = {
+            id: generateDealId(),
+            name: name,
+            originalAmount: amount,
+            amount: finalAmount,
+            currency: selectedCurrency,
+            dealType: dealType,
+            feePayer: feePayer,
+            additionalInfo: additionalInfo,
+            sellerId: currentUser.id,
+            sellerUsername: sellerUsername,
+            sellerName: currentUser.first_name || 'Продавец',
+            createdAt: getFormattedDate(),
+            status: 'waiting_buyer'
+        };
+        
+        saveDeal(currentDeal);
+        
+        document.getElementById('dealNameValue').textContent = currentDeal.name;
+        document.getElementById('dealAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        document.getElementById('sellerName').textContent = currentDeal.sellerUsername;
+        document.getElementById('buyerName').textContent = 'Ожидается';
+        document.getElementById('createdDate').textContent = currentDeal.createdAt;
+        document.getElementById('dealIdValue').textContent = currentDeal.id;
+        
+        dealProgress = 0;
+        updateProgressDisplay();
+        
+        showScreen('progress');
+        
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(() => {
+            if (currentDeal && currentDeal.status === 'waiting_buyer') {
+                tg.sendData(JSON.stringify({ action: 'get_deal_info', deal_id: currentDeal.id }));
+            } else if (updateInterval) { clearInterval(updateInterval); updateInterval = null; }
+        }, 3000);
+    }
+    
+    function updateProgressDisplay() {
+        const waitingBuyerDiv = document.getElementById('waitingBuyer');
+        const progressStepsDiv = document.getElementById('progressSteps');
+        
+        if (dealProgress === 0) {
+            waitingBuyerDiv.classList.remove('hidden');
+            progressStepsDiv.classList.add('hidden');
+        } else {
+            waitingBuyerDiv.classList.add('hidden');
+            progressStepsDiv.classList.remove('hidden');
+            
+            const steps = [
+                { icon: 'step2Icon', active: dealProgress >= 1, completed: dealProgress > 1 },
+                { icon: 'step3Icon', active: dealProgress >= 2, completed: dealProgress > 2 },
+                { icon: 'step4Icon', active: dealProgress >= 3, completed: dealProgress > 3 },
+                { icon: 'step5Icon', active: dealProgress >= 4, completed: dealProgress > 4 }
+            ];
+            
+            steps.forEach((step) => {
+                const iconEl = document.getElementById(step.icon);
+                if (step.completed) {
+                    iconEl.innerHTML = '✓';
+                    iconEl.style.background = '#22c55e';
+                } else if (step.active) {
+                    iconEl.innerHTML = '●';
+                    iconEl.style.background = '#a855f7';
+                } else {
+                    iconEl.innerHTML = '⏳';
+                    iconEl.style.background = '#252a35';
+                }
+            });
+        }
+    }
+    
+    function copyDealId() {
+        if (currentDeal) {
+            navigator.clipboard.writeText(currentDeal.id);
+            tg.showPopup({ title: 'Скопировано', message: `ID сделки ${currentDeal.id} скопирован`, buttons: [{ type: 'ok' }] });
+        }
+    }
+    
+    // ========== ОБРАБОТКА ПАРАМЕТРА START ПРИ ОТКРЫТИИ ==========
+    const urlParams = new URLSearchParams(window.location.search);
+    const startParam = urlParams.get('start');
+    if (startParam && startParam.startsWith('deal_')) {
+        const dealId = startParam.replace('deal_', '');
+        tg.sendData(JSON.stringify({
+            action: 'get_deal_info',
+            deal_id: dealId,
+            is_buyer: true
+        }));
+        setTimeout(() => {
+            if (screens.progress) showScreen('progress');
+        }, 500);
+    }
+    
+    // ========== ИКОНКИ ==========
+    function renderAddUserIcon() {
+        const container = document.getElementById('addUserIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M9.92234 21.8084C6.10834 21.8084 2.85034 21.2314 2.85034 18.9214C2.85034 16.6114 6.08734 14.5104 9.92234 14.5104C13.7363 14.5104 16.9943 16.5914 16.9943 18.9004C16.9943 21.2094 13.7573 21.8084 9.92234 21.8084Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M9.92243 11.216C12.4254 11.216 14.4554 9.18602 14.4554 6.68302C14.4554 4.17902 12.4254 2.15002 9.92243 2.15002C7.41943 2.15002 5.38943 4.17902 5.38943 6.68302C5.38043 9.17702 7.39643 11.207 9.89043 11.216H9.92243Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19.1313 8.12915V12.1392" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21.1776 10.1339H17.0876" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+    }
+    
+    function renderInfoIcon() {
+        const container = document.getElementById('infoIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="21" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M18.6963 19.696C19.9193 18.473 20.5002 16.4268 20.5002 12.9999C20.5002 9.57301 19.9193 7.52684 18.6963 6.30386C17.4733 5.08089 15.4271 4.49991 12.0002 4.49991C8.57334 4.49991 6.52717 5.08089 5.3042 6.30386C4.08123 7.52684 3.50024 9.57301 3.50024 12.9999C3.50024 16.4268 4.08123 18.473 5.3042 19.696C6.52717 20.9189 8.57334 21.4999 12.0002 21.4999C15.4271 21.4999 17.4733 20.9189 18.6963 19.696ZM19.7569 20.7566C18.0892 22.4244 15.5103 22.9999 12.0002 22.9999C8.49015 22.9999 5.91132 22.4244 4.24354 20.7566C2.57576 19.0888 2.00024 16.51 2.00024 12.9999C2.00024 9.48981 2.57576 6.91098 4.24354 5.2432C5.91132 3.57543 8.49015 2.99991 12.0002 2.99991C15.5103 2.99991 18.0892 3.57543 19.7569 5.2432C21.4247 6.91098 22.0002 9.48981 22.0002 12.9999C22.0002 16.51 21.4247 19.0888 19.7569 20.7566Z" fill="#FFFFFF"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.0002 17.645C11.586 17.645 11.2502 17.3092 11.2502 16.895V13C11.2502 12.5858 11.586 12.25 12.0002 12.25C12.4145 12.25 12.7502 12.5858 12.7502 13V16.895C12.7502 17.3092 12.4145 17.645 12.0002 17.645Z" fill="#FFFFFF"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.7546 9.5C12.7546 9.91421 12.4189 10.25 12.0046 10.25H11.9956C11.5814 10.25 11.2456 9.91421 11.2456 9.5C11.2456 9.08579 11.5814 8.75 11.9956 8.75H12.0046C12.4189 8.75 12.7546 9.08579 12.7546 9.5Z" fill="#FFFFFF"/>
+        </svg>`;
+    }
+    
+    function renderProfileIcon() {
+        const container = document.getElementById('profileIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7.17048 12.5317C3.30286 12.5317 -4.08562e-14 13.1165 -4.08562e-14 15.4584C-4.08562e-14 17.8003 3.2819 18.406 7.17048 18.406C11.0381 18.406 14.34 17.8203 14.34 15.4793C14.34 13.1384 11.059 12.5317 7.17048 12.5317Z"/>
+                <path d="M7.17048 9.19143C9.70857 9.19143 11.7657 7.13333 11.7657 4.59524C11.7657 2.05714 9.70857 -5.32907e-15 7.17048 -5.32907e-15C4.63238 -5.32907e-15 2.57426 2.05714 2.57426 4.59524C2.56571 7.12476 4.60952 9.18286 7.1381 9.19143L7.17048 9.19143Z"/>
+            </g>
+        </svg>`;
+    }
+    
+    function renderChartIcon() {
+        const container = document.getElementById('chartIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="21" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M7.48315 10.5109C7.89737 10.5109 8.23315 10.8467 8.23315 11.2609V17.9546C8.23315 18.3688 7.89737 18.7046 7.48315 18.7046C7.06894 18.7046 6.73315 18.3688 6.73315 17.9546V11.2609C6.73315 10.8467 7.06894 10.5109 7.48315 10.5109Z" fill="#FFFFFF"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.0369 7.30734C12.4511 7.30734 12.7869 7.64313 12.7869 8.05734V17.9552C12.7869 18.3695 12.4511 18.7052 12.0369 18.7052C11.6227 18.7052 11.2869 18.3695 11.2869 17.9552V8.05734C11.2869 7.64313 11.6227 7.30734 12.0369 7.30734Z" fill="#FFFFFF"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5157 14.0482C16.93 14.0482 17.2657 14.384 17.2657 14.7982V17.955C17.2657 18.3692 16.93 18.705 16.5157 18.705C16.1015 18.705 15.7657 18.3692 15.7657 17.955V14.7982C15.7657 14.384 16.1015 14.0482 16.5157 14.0482Z" fill="#FFFFFF"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.96051 5.96045C3.66147 7.25949 3.05005 9.42738 3.05005 13.0368C3.05005 16.6463 3.66147 18.8142 4.96051 20.1132C6.25956 21.4123 8.42744 22.0237 12.0369 22.0237C15.6463 22.0237 17.8142 21.4123 19.1133 20.1132C20.4123 18.8142 21.0237 16.6463 21.0237 13.0368C21.0237 9.42738 20.4123 7.25949 19.1133 5.96045C17.8142 4.6614 15.6463 4.04999 12.0369 4.04999C8.42744 4.04999 6.25956 4.6614 4.96051 5.96045ZM3.89985 4.89979C5.6437 3.15594 8.34424 2.54999 12.0369 2.54999C15.7295 2.54999 18.4301 3.15594 20.1739 4.89979C21.9178 6.64364 22.5237 9.34418 22.5237 13.0368C22.5237 16.7295 21.9178 19.43 20.1739 21.1739C18.4301 22.9177 15.7295 23.5237 12.0369 23.5237C8.34424 23.5237 5.6437 22.9177 3.89985 21.1739C2.156 19.43 1.55005 16.7295 1.55005 13.0368C1.55005 9.34418 2.156 6.64364 3.89985 4.89979Z" fill="#FFFFFF"/>
+        </svg>`;
+    }
+    
+    function renderWalletIcon() {
+        const container = document.getElementById('walletIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19.1389 11.3958L15.0906 11.3958C13.6042 11.3949 12.3994 10.1909 12.3985 8.70449C12.3985 7.21805 13.6042 6.01413 15.0906 6.01321L19.1389 6.01321"/>
+                <line x1="15.5486" y1="8.64288" x2="15.2369" y2="8.64288"/>
+                <path d="M5.24766 0L13.8911 0C16.7892 0 19.1388 2.34951 19.1388 5.24766L19.1388 12.4247C19.1388 15.3229 16.7892 17.6724 13.8911 17.6724L5.24766 17.6724C2.34951 17.6724 0 15.3229 0 12.4247L0 5.24766C0 2.34951 2.34951 0 5.24766 0Z"/>
+                <line x1="4.53561" y1="4.53816" x2="9.93456" y2="4.53816"/>
+            </g>
+        </svg>`;
+    }
+    
+    function renderWorkIcon() {
+        const container = document.getElementById('workIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.2729 12.7352C19.6859 12.7662 19.9949 13.1272 19.9639 13.5402L19.7739 16.0492C19.6169 18.1192 17.8699 19.7402 15.7949 19.7402H4.1949C2.1199 19.7402 0.3729 18.1192 0.2159 16.0492L0.0259 13.5402C-0.0051 13.1272 0.3049 12.7662 0.7179 12.7352C1.1329 12.7202 1.4909 13.0132 1.5229 13.4272L1.7119 15.9352C1.8099 17.2272 2.8999 18.2402 4.1949 18.2402H15.7949C17.0899 18.2402 18.1809 17.2272 18.2779 15.9352L18.4679 13.4272C18.4999 13.0132 18.8669 12.7192 19.2729 12.7352Z" fill="currentColor"/><path d="M11.2851 0.0001C12.788 0.0001 14.0332 1.12636 14.2207 2.57913L16.1902 2.58C18.2862 2.58 19.9902 4.289 19.9902 6.391V9.83C19.9902 10.097 19.8482 10.343 19.6192 10.477C17.1509 11.9225 14.0241 12.7656 10.7447 12.8781L10.7451 14.6767C10.7451 15.0907 10.4091 15.4267 9.9951 15.4267C9.5811 15.4267 9.2451 15.0907 9.2451 14.6767L9.24445 12.8783C5.96838 12.7669 2.84136 11.9236 0.3712 10.477C0.1412 10.343 0.0002 10.097 0.0002 9.83V6.381C0.0002 4.285 1.7092 2.58 3.8102 2.58L5.76951 2.57913C5.95704 1.12636 7.20216 0.0001 8.7051 0.0001H11.2851Z" fill="currentColor"/><path d="M16.1902 4.08H3.8102C2.5362 4.08 1.5002 5.112 1.5002 6.381V9.393C3.87391 10.6828 6.86643 11.3896 9.98119 11.391L9.9951 11.3897L10.0062 11.3901L10.4824 11.3851C13.4282 11.315 16.2383 10.6161 18.4902 9.393V6.391C18.4902 5.116 17.4592 4.08 16.1902 4.08Z" fill="currentColor"/><path d="M11.2851 1.5001H8.7051C8.03176 1.5001 7.46336 1.95837 7.29545 2.57938H12.6947C12.5268 1.95837 11.9584 1.5001 11.2851 1.5001Z" fill="currentColor"/></svg>`;
+    }
+    
+    function renderNotificationIcon() {
+        const container = document.getElementById('notificationIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.5586 13.3986C18.5586 15.2846 19.1326 17.1266 20.2026 18.6796H4.29761C5.36861 17.1266 5.94161 15.2846 5.94161 13.3986V10.6056C5.94161 7.12163 8.76561 4.29663 12.2506 4.29663C15.4016 4.29663 18.0136 6.60763 18.4836 9.62763" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/><path d="M12.2505 4.29667V2.13867" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/><path d="M15.4802 18.6797V18.9097C15.4802 20.6927 14.0342 22.1387 12.2512 22.1387C10.4682 22.1387 9.02319 20.6927 9.02319 18.9097V18.6797" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg>`;
+    }
+    
+    function renderGiftIcon() {
+        const container = document.getElementById('giftIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="34" height="34" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M12.7507 7.93699H8.70116C7.4577 7.93699 6.45068 6.92997 6.45068 5.68651C6.45068 4.44501 7.4577 3.43701 8.70116 3.43701C11.8507 3.43701 12.7507 7.93699 12.7507 7.93699Z" stroke="url(#grad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path fillRule="evenodd" clipRule="evenodd" d="M12.752 7.93699H16.8011C18.0445 7.93699 19.0515 6.92997 19.0515 5.68651C19.0515 4.44501 18.0445 3.43701 16.8011 3.43701C13.6516 3.43701 12.752 7.93699 12.752 7.93699Z" stroke="url(#grad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.7542 7.96436H19.6384C20.6756 7.96436 21.5163 8.805 21.5163 9.84218V10.6585C21.5163 11.6373 20.7223 12.4303 19.7445 12.4303H5.86025C4.82307 12.4303 3.98242 11.5896 3.98242 10.5534V9.73516C3.98242 8.75732 4.77539 7.96436 5.7542 7.96436Z" stroke="url(#grad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M19.973 12.4565V18.9647C19.973 20.3288 18.8677 21.4351 17.5036 21.4351H7.99771C6.63361 21.4351 5.52734 20.3288 5.52734 18.9647V12.4565" stroke="url(#grad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M12.75 21.4373V12.5347" stroke="url(#grad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs></svg>`;
+    }
+    
+    function renderShieldIcon() {
+        const container = document.getElementById('shieldIcon');
+        if (!container) return;
+        container.innerHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.31245 12.879C4.31245 19.283 11.9845 21.606 11.9845 21.606C11.9845 21.606 19.6565 19.283 19.6565 12.879C19.6565 6.474 19.9345 5.974 19.3195 5.358C18.7035 4.742 12.9905 2.75 11.9845 2.75C10.9785 2.75 5.26545 4.742 4.65045 5.358C4.13767 5.87079 4.2445 5.17473 4.29467 9" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.38574 11.8746L11.2777 13.7696L15.1757 9.8696" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>`;
+    }
+    
+    // ========== НАВИГАЦИЯ ==========
+    const screens = {
+        main: document.getElementById('mainScreen'),
+        info: document.getElementById('infoScreen'),
+        support: document.getElementById('supportScreen'),
+        referral: document.getElementById('referralScreen'),
+        wallet: document.getElementById('walletScreen'),
+        addCard: document.getElementById('addCardScreen'),
+        selectCrypto: document.getElementById('selectCryptoScreen'),
+        addCrypto: document.getElementById('addCryptoScreen'),
+        addTon: document.getElementById('addTonScreen'),
+        listWallets: document.getElementById('listWalletsScreen'),
+        history: document.getElementById('historyScreen'),
+        create: document.getElementById('createDealScreen'),
+        progress: document.getElementById('dealProgressScreen'),
+        success: document.getElementById('successScreen')
+    };
+    
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => {
+            if (screen) screen.classList.add('hidden');
+        });
+        if (screens[screenName]) screens[screenName].classList.remove('hidden');
+        
+        if (screenName === 'listWallets') renderWalletsList();
+        if (screenName === 'history') renderHistoryList();
+        if (screenName === 'referral') updateReferralLink();
+    }
+    
+    // ========== ОБРАБОТЧИКИ ==========
+    document.querySelectorAll('[data-action="info"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('info'));
+    });
+    document.querySelectorAll('[data-action="support"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('support'));
+    });
+    document.querySelectorAll('[data-action="referral"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('referral'));
+    });
+    document.querySelectorAll('[data-action="wallet"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('wallet'));
+    });
+    document.querySelectorAll('[data-action="history"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('history'));
+    });
+    
+    document.querySelectorAll('[data-wallet-action="add_card"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('addCard'));
+    });
+    document.querySelectorAll('[data-wallet-action="add_crypto"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('selectCrypto'));
+    });
+    document.querySelectorAll('[data-wallet-action="add_ton"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('addTon'));
+    });
+    document.querySelectorAll('[data-wallet-action="list_wallets"]').forEach(el => {
+        el.addEventListener('click', () => showScreen('listWallets'));
+    });
+    
+    document.getElementById('backToWalletFromCard')?.addEventListener('click', () => showScreen('wallet'));
+    document.getElementById('backToWalletFromCrypto')?.addEventListener('click', () => showScreen('wallet'));
+    document.getElementById('backToWalletFromTon')?.addEventListener('click', () => showScreen('wallet'));
+    document.getElementById('backToWalletFromList')?.addEventListener('click', () => showScreen('wallet'));
+    document.getElementById('backToCryptoSelect')?.addEventListener('click', () => showScreen('selectCrypto'));
+    document.getElementById('backToMainFromWallet')?.addEventListener('click', () => showScreen('main'));
+    document.getElementById('backToMainFromHistory')?.addEventListener('click', () => showScreen('main'));
+    document.getElementById('backToMainFromReferral')?.addEventListener('click', () => showScreen('main'));
+    document.getElementById('copyReferralLinkBtn')?.addEventListener('click', copyReferralLink);
+    
+    // Сохранение карты
+    document.getElementById('saveCardBtn')?.addEventListener('click', () => {
+        const cardNumber = document.getElementById('cardNumber').value.trim();
+        if (!cardNumber) {
+            tg.showPopup({ title: 'Ошибка', message: 'Введите номер карты', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        wallets.card = { address: cardNumber };
+        saveWallets();
+        tg.showPopup({ title: 'Успех', message: 'Карта сохранена', buttons: [{ type: 'ok' }] });
+        showScreen('wallet');
+    });
+    
+    // Выбор криптовалюты
+    document.querySelectorAll('[data-crypto-type]').forEach(el => {
+        el.addEventListener('click', () => {
+            pendingCryptoType = el.dataset.cryptoType;
+            const titles = { btc: 'Bitcoin', eth: 'Ethereum', usdt: 'USDT' };
+            const prompts = { btc: 'Введите адрес BTC кошелька:', eth: 'Введите адрес ETH кошелька:', usdt: 'Введите адрес USDT кошелька:' };
+            document.getElementById('cryptoScreenTitle').textContent = `Добавление ${titles[pendingCryptoType]}`;
+            document.getElementById('cryptoPrompt').textContent = prompts[pendingCryptoType];
+            showScreen('addCrypto');
+        });
+    });
+    
+    // Сохранение криптокошелька
+    document.getElementById('saveCryptoBtn')?.addEventListener('click', () => {
+        const address = document.getElementById('cryptoAddress').value.trim();
+        if (!address) {
+            tg.showPopup({ title: 'Ошибка', message: 'Введите адрес кошелька', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        wallets[pendingCryptoType] = { address: address };
+        saveWallets();
+        tg.showPopup({ title: 'Успех', message: `${pendingCryptoType.toUpperCase()} кошелек сохранен`, buttons: [{ type: 'ok' }] });
+        showScreen('wallet');
+    });
+    
+    // Сохранение TON кошелька
+    document.getElementById('saveTonBtn')?.addEventListener('click', () => {
+        const address = document.getElementById('tonAddress').value.trim();
+        if (!address) {
+            tg.showPopup({ title: 'Ошибка', message: 'Введите адрес TON кошелька', buttons: [{ type: 'ok' }] });
+            return;
+        }
+        wallets.ton = { address: address };
+        saveWallets();
+        tg.showPopup({ title: 'Успех', message: 'TON кошелек сохранен', buttons: [{ type: 'ok' }] });
+        showScreen('wallet');
+    });
+    
+    // ОБРАБОТЧИКИ КНОПОК
+    document.getElementById('createDealBtn').onclick = () => showScreen('create');
+    document.getElementById('backToMainFromInfo').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromSupport').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromCreate').onclick = () => showScreen('main');
+    document.getElementById('cancelCreateBtn').onclick = () => showScreen('main');
+    document.getElementById('backToMainFromProgress').onclick = () => {
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = null;
+        showScreen('main');
+    };
+    document.getElementById('backToMainFromSuccess').onclick = () => showScreen('main');
+    document.getElementById('submitDealBtn').onclick = createDeal;
+    document.getElementById('dealIdValue').onclick = copyDealId;
+    document.getElementById('inviteBuyerBtn').onclick = inviteBuyer;
+    
+    // ВЫБОР ВАЛЮТЫ
+    document.querySelectorAll('.currency-item').forEach(el => {
+        el.addEventListener('click', () => {
+            document.querySelectorAll('.currency-item').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedCurrency = el.dataset.currency;
+        });
+    });
+    const firstCurrency = document.querySelector('.currency-item');
+    if (firstCurrency) firstCurrency.classList.add('selected');
+    
+    // СЧЁТЧИК СИМВОЛОВ
+    const additionalInfo = document.getElementById('additionalInfo');
+    if (additionalInfo) {
+        additionalInfo.addEventListener('input', function(e) {
+            const count = e.target.value.length;
+            const charCount = document.getElementById('charCount');
+            if (charCount) charCount.textContent = `${count} / 20`;
+            if (count > 20) e.target.value = e.target.value.slice(0, 20);
+        });
+    }
+    
+    // ВЫБОР РАДИО
+    document.querySelectorAll('.radio-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio && !radio.checked) {
+                radio.checked = true;
+                document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+            }
+        });
+    });
+    
+    // ИНИЦИАЛИЗАЦИЯ ИКОНОК
+    renderGiftIcon();
+    renderShieldIcon();
+    renderWorkIcon();
+    renderNotificationIcon();
+    renderInfoIcon();
+    renderProfileIcon();
+    renderChartIcon();
+    renderWalletIcon();
+    renderAddUserIcon();
+    
+    tg.MainButton.hide();
+    tg.BackButton.hide();
+    
+    window.advanceProgress = function() {
+        if (dealProgress < 4) {
+            dealProgress++;
+            updateProgressDisplay();
+            if (dealProgress === 4 && currentDeal) {
+                updateDealStatus(currentDeal.id, 'completed');
+                setTimeout(() => showScreen('success'), 500);
+            }
+        }
+    };
+</script>
+</body>
+</html>
