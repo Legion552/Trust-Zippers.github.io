@@ -931,7 +931,7 @@
         </div>
 
         <div class="card text-center">
-            <!-- QR-код по центру -->
+            <!-- QR-код ПО ЦЕНТРУ -->
             <div style="display: flex; justify-content: center; margin-bottom: 16px;">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10.0558 10.0338V3.22778H3.24976V10.0338H10.0558Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
@@ -949,10 +949,8 @@
                 </svg>
             </div>
             
-            <!-- НАДПИСЬ ПО ЦЕНТРУ БЕЗ СИМВОЛОВ -->
             <h3 style="color: #a855f7; margin-bottom: 24px; text-align: center;">Сделка успешно создана!</h3>
             
-            <!-- ИНФОРМАЦИЯ БЕЗ ИКОНОК -->
             <div style="margin-bottom: 16px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span>Сумма:</span>
@@ -974,11 +972,7 @@
             <p style="margin-bottom: 16px;">Средства защищены гарантией Trust Zipper</p>
             
             <div style="margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                    <span>Ссылка для оплаты:</span>
-                    <input type="text" id="paymentLinkInput" readonly style="flex: 1; font-size: 12px; padding: 10px;" value="">
-                    <button id="copyPaymentLinkBtn" class="btn" style="width: auto; padding: 10px 16px;">Копировать</button>
-                </div>
+                <button id="copyPaymentLinkBtn" class="btn" style="width: 100%; padding: 14px;">Копировать</button>
             </div>
             
             <p style="font-size: 12px; color: #6b7280; margin-top: 12px;">
@@ -1164,7 +1158,6 @@
         document.getElementById('createdDate').textContent = deal.createdAt;
         document.getElementById('dealIdValue').textContent = deal.id;
 
-        // Если это продавец (создатель) - показываем экран с QR-кодом и ссылкой
         if (deal.sellerId === currentUser.id) {
             dealProgress = 1;
             updateProgressDisplay();
@@ -1195,11 +1188,9 @@
 
     // ========== КОПИРОВАНИЕ ССЫЛКИ ДЛЯ ОПЛАТЫ ==========
     function copyPaymentLink() {
-        const linkInput = document.getElementById('paymentLinkInput');
-        if (linkInput && linkInput.value) {
-            navigator.clipboard.writeText(linkInput.value);
-            tg.showPopup({ title: 'Скопировано', message: 'Ссылка для оплаты скопирована', buttons: [{ type: 'ok' }] });
-        }
+        const link = `https://t.me/${BOT_USERNAME}?start=pay_${currentDeal.id.replace('#', '')}`;
+        navigator.clipboard.writeText(link);
+        tg.showPopup({ title: 'Скопировано', message: 'Ссылка для оплаты скопирована', buttons: [{ type: 'ok' }] });
     }
 
     // ========== ОБРАБОТКА ДАННЫХ ОТ БОТА ==========
@@ -1312,12 +1303,9 @@
 
         saveDeal(currentDeal);
 
-        // Обновляем экран "Сделка успешно создана"
         document.getElementById('dealCreatedAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
         document.getElementById('dealCreatedDesc').textContent = currentDeal.name;
         document.getElementById('dealCreatedId').textContent = currentDeal.id;
-        const paymentLink = `https://t.me/${BOT_USERNAME}?start=pay_${currentDeal.id.replace('#', '')}`;
-        document.getElementById('paymentLinkInput').value = paymentLink;
 
         document.getElementById('dealNameValue').textContent = currentDeal.name;
         document.getElementById('dealAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
@@ -1328,8 +1316,6 @@
 
         dealProgress = 0;
         updateProgressDisplay();
-        
-        // Продавец сразу видит экран с QR-кодом
         showScreen('dealCreated');
     }
 
