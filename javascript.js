@@ -331,7 +331,7 @@ function showScreenById(screenId) {
 function updateReferralLink() {
     const linkInput = document.getElementById('referralLinkInput');
     if (linkInput) {
-        const refLink = `https://t.me/TrustZipperBot?start=ref_${currentUser.id}`;
+        const refLink = `https://t.me/TrustZipperBot?startapp=ref_${currentUser.id}`;
         linkInput.value = refLink;
     }
 }
