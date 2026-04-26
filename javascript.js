@@ -1,6 +1,7 @@
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 let tg = null;
 let currentUser = null;
+let pendingDealRequest = null;
 
 // Глобальный перехват ошибок (чтобы не вылетало)
 window.onerror = function(message, source, lineno, colno, error) {
@@ -33,6 +34,7 @@ if (!tg) {
         MainButton: { hide: () => {}, show: () => {} },
         BackButton: { hide: () => {}, show: () => {} },
         onEvent: () => {},
+        offEvent: () => {},
         expand: () => {},
         ready: () => {}
     };
@@ -638,6 +640,84 @@ function createDeal() {
     }
 }
 
+// ========== ОБРАБОТКА ДАННЫХ ОТ БОТА ==========
+function setupTelegramEventHandler() {
+    if (!tg || typeof tg.onEvent !== 'function') return;
+    
+    tg.onEvent('web_app_data_sent', (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('Получены данные от бота:', data);
+            
+            if (data.action === 'deal_data') {
+                const newDeal = {
+                    id: data.id,
+                    name: data.description || 'Без названия',
+                    amount: data.amount,
+                    currency: data.currency,
+                    sellerUsername: data.seller_username,
+                    sellerId: data.seller_id,
+                    createdAt: data.created_at || getFormattedDate(),
+                    status: data.status || 'waiting_buyer'
+                };
+                
+                // Сохраняем в локальное хранилище
+                if (!deals.find(d => d.id === newDeal.id)) {
+                    deals.push(newDeal);
+                    saveDeals();
+                }
+                
+                // Если это ответ на запрос из startapp
+                if (pendingDealRequest === newDeal.id) {
+                    pendingDealRequest = null;
+                    openDeal(newDeal);
+                }
+            } else if (data.action === 'deal_not_found') {
+                if (pendingDealRequest) {
+                    pendingDealRequest = null;
+                    showMessage('Сделка не найдена', 'Возможно, сделка была удалена или ссылка неверна.');
+                }
+            } else if (data.action === 'payment_confirmed') {
+                if (currentDeal && currentDeal.id === data.deal_id) {
+                    dealProgress = 2;
+                    updateProgressDisplay();
+                    const index = deals.findIndex(d => d.id === currentDeal.id);
+                    if (index !== -1) deals[index].status = 'paid';
+                    saveDeals();
+                    renderHistoryList();
+                    showMessage('Оплата подтверждена', 'Администратор подтвердил оплату. Продавец отправит товар.');
+                }
+            } else if (data.action === 'deal_status_update') {
+                if (currentDeal && currentDeal.id === data.deal_id) {
+                    switch(data.status) {
+                        case 'paid':
+                            dealProgress = 2;
+                            updateDealStatus(currentDeal.id, 'paid');
+                            break;
+                        case 'completed':
+                            dealProgress = 4;
+                            updateDealStatus(currentDeal.id, 'completed');
+                            updateProgressDisplay();
+                            setTimeout(() => showScreenById('successScreen'), 500);
+                            break;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Ошибка обработки данных от бота:', e);
+        }
+    });
+}
+
+function updateDealStatus(dealId, status) {
+    const index = deals.findIndex(d => d.id === dealId);
+    if (index !== -1) {
+        deals[index].status = status;
+        saveDeals();
+        renderHistoryList();
+    }
+}
+
 // ========== ИКОНКИ ==========
 function renderAddUserIcon() {
     const container = document.getElementById('addUserIcon');
@@ -696,6 +776,9 @@ function renderShieldIcon() {
 // ========== ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ ==========
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        // Устанавливаем обработчик событий от бота
+        setupTelegramEventHandler();
+        
         const createDealBtn = document.getElementById('createDealBtn');
         if (createDealBtn) createDealBtn.onclick = () => showScreenById('createDealScreen');
         
@@ -932,8 +1015,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         openDeal(foundDeal);
                     }, 500);
                 } else {
-                    console.log('Deal not found:', dealId);
-                    showMessage('Сделка не найдена', 'Возможно, сделка была удалена или ссылка неверна.');
+                    // ЗАПРАШИВАЕМ У БОТА ДАННЫЕ СДЕЛКИ
+                    console.log('Deal not found locally, requesting from bot:', dealId);
+                    pendingDealRequest = dealId;
+                    if (tg && tg.sendData) {
+                        tg.sendData(JSON.stringify({
+                            action: 'get_deal',
+                            deal_id: dealId
+                        }));
+                    }
+                    showMessage('Загрузка', 'Получаем данные о сделке от сервера...');
                 }
             }
         }
