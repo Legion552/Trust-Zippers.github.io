@@ -1372,7 +1372,7 @@ function copyPaymentLink() {
         showTgPopup('Ошибка', 'Сначала создайте сделку');
         return;
     }
-    const link = `https://t.me/${BOT_USERNAME}?startapp=pay_${currentDeal.id.replace('#', '')}`;
+    const link = `https://t.me/${BOT_USERNAME}?app=pay_${currentDeal.id.replace('#', '')}`;
     navigator.clipboard.writeText(link).catch(() => {});
     showTgPopup('Скопировано', 'Ссылка для оплаты скопирована');
 }
@@ -1383,7 +1383,7 @@ function inviteBuyer() {
         showTgPopup('Ошибка', 'Сначала создайте сделку');
         return;
     }
-    const link = `https://t.me/${BOT_USERNAME}?startapp=deal_${currentDeal.id.replace('#', '')}`;
+    const link = `https://t.me/${BOT_USERNAME}?app=deal_${currentDeal.id.replace('#', '')}`;
     navigator.clipboard.writeText(link).catch(() => {});
     showTgPopup('Ссылка скопирована', `Ссылка для покупателя:\n${link}\n\nПосле того как покупатель перейдет по ссылке, его username появится в поле "Покупатель".`);
 }
