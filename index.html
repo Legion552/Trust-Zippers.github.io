@@ -27,7 +27,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .header {
             display: flex;
             align-items: center;
@@ -46,11 +45,6 @@
             justify-content: center;
         }
 
-        .logo-icon svg {
-            width: 34px;
-            height: 34px;
-        }
-
         .logo-text h1 {
             font-size: 24px;
             font-weight: 700;
@@ -58,7 +52,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: -0.5px;
         }
 
         .logo-sub {
@@ -67,13 +60,13 @@
             margin-top: 2px;
         }
 
-        /* Cards */
         .card {
             background: #15171e;
             border-radius: 24px;
             padding: 20px;
             margin-bottom: 16px;
             border: 1px solid #2a2e3a;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .card-header {
@@ -90,19 +83,17 @@
             font-weight: 600;
         }
 
-        /* Buttons */
         .btn {
             background: #a855f7;
             color: #ffffff;
             border: none;
             border-radius: 14px;
             padding: 14px 20px;
-            font-size: 16px !important;
+            font-size: 16px;
             font-weight: 600;
             width: 100%;
             cursor: pointer;
             transition: opacity 0.2s, transform 0.1s;
-            touch-action: manipulation;
         }
 
         .btn:active {
@@ -116,7 +107,6 @@
             border: 1px solid #3a3f4a;
         }
 
-        /* Forms */
         .input-group {
             margin-bottom: 16px;
         }
@@ -136,9 +126,8 @@
             border: 1px solid #2a2e3a;
             border-radius: 14px;
             color: #ffffff;
-            font-size: 16px !important;
+            font-size: 16px;
             font-family: inherit;
-            transition: border 0.2s;
         }
 
         input:focus, select:focus, textarea:focus {
@@ -146,12 +135,6 @@
             border-color: #a855f7;
         }
 
-        input#amount, input#dealIdInput {
-            font-size: 18px !important;
-            padding: 16px;
-        }
-
-        /* Radio Groups */
         .radio-group {
             display: flex;
             flex-direction: column;
@@ -198,7 +181,6 @@
             color: #8a8f9e;
         }
 
-        /* Currency Grid */
         .currency-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -223,7 +205,6 @@
             border-color: #a855f7;
         }
 
-        /* Progress Steps */
         .progress-steps {
             display: flex;
             flex-direction: column;
@@ -271,7 +252,6 @@
             color: #8a8f9e;
         }
 
-        /* Utilities */
         .hidden {
             display: none !important;
         }
@@ -286,7 +266,6 @@
         .mb-2 { margin-bottom: 8px; }
         .text-center { text-align: center; }
 
-        /* Success Screen */
         .success-screen {
             display: flex;
             flex-direction: column;
@@ -319,20 +298,6 @@
             color: #a855f7;
         }
 
-        .radio-icon {
-            width: 24px;
-            height: 24px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .radio-icon svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Info & Support */
         .info-text, .support-text {
             line-height: 1.6;
         }
@@ -353,7 +318,6 @@
             text-decoration: none;
         }
 
-        /* Wallet Items */
         .wallet-item {
             background: #0a0c10;
             border-radius: 14px;
@@ -380,7 +344,6 @@
             display: inline-block;
         }
 
-        /* Deal History */
         .deal-history-item {
             background: #0a0c10;
             border-radius: 14px;
@@ -407,7 +370,6 @@
             color: #a855f7;
         }
 
-        /* Deal ID Display */
         .deal-id-display {
             background: #0a0c10;
             border-radius: 14px;
@@ -431,11 +393,32 @@
             text-align: center;
         }
         
-        /* Loading spinner */
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #8a8f9e;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 12px; padding-bottom: 60px; }
+            .card { padding: 16px; }
+            .currency-grid { grid-template-columns: repeat(2, 1fr); }
+            .btn { padding: 12px 16px; }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #15171e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2e3a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a855f7;
         }
     </style>
 </head>
@@ -456,7 +439,6 @@
                 <span class="card-title">Безопасные сделки</span>
             </div>
             <button class="btn" id="createDealBtn">Создать сделку</button>
-            <button class="btn btn-secondary mt-3" id="joinDealBtn">Присоединиться к сделке</button>
         </div>
 
         <div class="card">
@@ -522,7 +504,7 @@
         </div>
     </div>
 
-    <!-- ЭКРАН ПРИСОЕДИНЕНИЯ К СДЕЛКЕ -->
+    <!-- ЭКРАН ПРИСОЕДИНЕНИЯ К СДЕЛКЕ (СКРЫТ, НО ОСТАВЛЕН ДЛЯ РАБОТОСПОСОБНОСТИ) -->
     <div id="joinDealScreen" class="hidden">
         <div class="flex-between" style="margin-bottom: 20px;">
             <button id="backToMainFromJoin" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
