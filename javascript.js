@@ -53,6 +53,18 @@ try {
     };
 }
 
+// ========== ЧТЕНИЕ ПАРАМЕТРОВ ИЗ ССЫЛКИ (startapp) ==========
+function getStartParam() {
+    try {
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+            return tg.initDataUnsafe.start_param;
+        }
+    } catch(e) {
+        console.error('Error getting start_param:', e);
+    }
+    return null;
+}
+
 // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
 let wallets = {};
 let deals = [];
@@ -99,7 +111,6 @@ function generateDealId() {
 
 // ========== ИСПРАВЛЕНО: ЗАЩИТА ОТ NaN ==========
 function formatAmount(amount, currency) {
-    // Защита от NaN
     if (amount === undefined || amount === null || isNaN(amount)) {
         return '0';
     }
@@ -111,7 +122,6 @@ function formatAmount(amount, currency) {
 }
 
 function calculateAmountWithFee(amount, feePayer) {
-    // Защита от NaN
     if (isNaN(amount)) return 0;
     return feePayer === 'buyer' ? amount * 1.02 : amount;
 }
@@ -146,7 +156,6 @@ function safeCopyToClipboard(text) {
             navigator.clipboard.writeText(text).catch(() => {});
             return true;
         } else {
-            // Фолбэк для старых браузеров
             const textarea = document.createElement('textarea');
             textarea.value = text;
             document.body.appendChild(textarea);
@@ -390,10 +399,36 @@ function openDeal(deal) {
             showScreenById('dealCreatedScreen');
         } else {
             showScreenById('dealProgressScreen');
+            
+            // Показываем реквизиты для оплаты покупателю
+            showPaymentDetails(deal);
         }
     } catch(e) {
         console.error('openDeal error:', e);
         showMessage('Ошибка', 'Не удалось открыть сделку');
+    }
+}
+
+// ========== ПОКАЗ РЕКВИЗИТОВ ДЛЯ ОПЛАТЫ (ДЛЯ ПОКУПАТЕЛЯ) ==========
+function showPaymentDetails(deal) {
+    // Ищем кошелёк продавца по валюте сделки
+    let sellerWallet = null;
+    const currency = deal.currency?.toLowerCase();
+    
+    if (currency === 'ton') sellerWallet = wallets.ton;
+    else if (currency === 'usdt') sellerWallet = wallets.usdt;
+    else if (currency === 'btc') sellerWallet = wallets.btc;
+    else if (currency === 'eth') sellerWallet = wallets.eth;
+    else sellerWallet = wallets.card;
+    
+    if (sellerWallet && sellerWallet.address) {
+        setTimeout(() => {
+            showMessage('💳 Реквизиты для оплаты', 
+                `💰 Сумма: ${deal.amount} ${deal.currency}\n\n` +
+                `📤 Получатель: ${deal.sellerUsername}\n` +
+                `💳 Реквизиты: ${sellerWallet.address}\n\n` +
+                `⚠️ После оплаты нажмите "Я оплатил" и ожидайте подтверждения.`);
+        }, 500);
     }
 }
 
@@ -407,27 +442,33 @@ function copyDealId() {
     showMessage('Скопировано', `ID сделки ${currentDeal.id} скопирован`);
 }
 
+// ========== КОПИРОВАНИЕ ССЫЛКИ ДЛЯ ОПЛАТЫ (как в The Open Guarantor) ==========
 function copyPaymentLink() {
     if (!currentDeal || !currentDeal.id) {
         showMessage('Ошибка', 'Сначала создайте сделку');
         return;
     }
-    const link = `https://t.me/TrustZipperBot?start=pay_${currentDeal.id.replace('#', '')}`;
-    safeCopyToClipboard(link);
-    showMessage('Скопировано', 'Ссылка для оплаты скопирована');
+    const cleanDealId = currentDeal.id.replace('#', '');
+    const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_${cleanDealId}`;
+    safeCopyToClipboard(paymentLink);
+    showMessage('✅ Ссылка скопирована', 
+        `🔗 ${paymentLink}\n\n📤 Отправьте её покупателю.\n\n💰 После оплаты администратор подтвердит перевод.\n\n🛡️ Средства защищены гарантией.`);
 }
 
+// ========== ПРИГЛАШЕНИЕ ПОКУПАТЕЛЯ ==========
 function inviteBuyer() {
     if (!currentDeal) {
         showMessage('Ошибка', 'Сначала создайте сделку');
         return;
     }
-    const link = `https://t.me/TrustZipperBot?start=deal_${currentDeal.id.replace('#', '')}`;
-    safeCopyToClipboard(link);
-    showMessage('Ссылка скопирована', `Ссылка для покупателя: ${link}`);
+    const cleanDealId = currentDeal.id.replace('#', '');
+    const dealLink = `https://t.me/TrustZipperBot?startapp=deal_${cleanDealId}`;
+    safeCopyToClipboard(dealLink);
+    showMessage('🔗 Ссылка скопирована', 
+        `Ссылка для присоединения к сделке:\n${dealLink}\n\nОтправьте её покупателю.\n\nПосле перехода покупатель увидит сделку.`);
 }
 
-// ========== ИСПРАВЛЕНО: СОЗДАНИЕ СДЕЛКИ С ПОЛНОЙ ЗАЩИТОЙ ==========
+// ========== СОЗДАНИЕ СДЕЛКИ ==========
 function createDeal() {
     try {
         const nameInput = document.getElementById('dealName');
@@ -442,7 +483,6 @@ function createDeal() {
         const name = nameInput.value.trim();
         let amount = parseFloat(amountInput.value);
         
-        // ========== ГЛАВНАЯ ЗАЩИТА ОТ NaN ==========
         if (isNaN(amount)) {
             showMessage('Ошибка', 'Введите корректную сумму (цифрами)');
             return;
@@ -506,7 +546,6 @@ function createDeal() {
         
         showScreenById('dealCreatedScreen');
         
-        // Очистка полей
         nameInput.value = '';
         if (amountInput) amountInput.value = '';
         if (additionalInfoInput) additionalInfoInput.value = '';
@@ -772,6 +811,27 @@ document.addEventListener('DOMContentLoaded', () => {
         renderChartIcon();
         renderWalletIcon();
         renderAddUserIcon();
+
+        // ========== АВТОМАТИЧЕСКОЕ ОТКРЫТИЕ ПО ССЫЛКЕ (startapp) ==========
+        const startParam = getStartParam();
+        if (startParam) {
+            console.log('Start param:', startParam);
+            
+            if (startParam.startsWith('pay_') || startParam.startsWith('deal_')) {
+                const prefix = startParam.includes('pay_') ? 'pay_' : 'deal_';
+                const cleanId = startParam.replace(prefix, '');
+                const dealId = '#' + cleanId;
+                
+                const foundDeal = deals.find(d => d.id === dealId);
+                if (foundDeal) {
+                    setTimeout(() => {
+                        openDeal(foundDeal);
+                    }, 500);
+                } else {
+                    console.log('Deal not found:', dealId);
+                }
+            }
+        }
 
         // Показываем главный экран
         showScreenById('mainScreen');
