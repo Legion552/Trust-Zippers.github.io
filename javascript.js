@@ -3,7 +3,7 @@ let tg = null;
 let currentUser = null;
 let pendingDealRequest = null;
 
-// Глобальный перехват ошибок (чтобы не вылетало)
+// Глобальный перехват ошибок
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('Global error:', message);
     try {
@@ -25,7 +25,7 @@ try {
     console.log('Telegram init error:', e);
 }
 
-// Фолбэк для работы вне Telegram или при ошибках
+// Фолбэк для работы вне Telegram
 if (!tg) {
     tg = {
         initDataUnsafe: { user: null },
@@ -55,7 +55,7 @@ try {
     };
 }
 
-// ========== ЧТЕНИЕ ПАРАМЕТРОВ ИЗ ССЫЛКИ (startapp) ==========
+// ========== ЧТЕНИЕ ПАРАМЕТРОВ ИЗ ССЫЛКИ ==========
 function getStartParam() {
     try {
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
@@ -113,9 +113,7 @@ function generateDealId() {
 }
 
 function formatAmount(amount, currency) {
-    if (amount === undefined || amount === null || isNaN(amount)) {
-        return '0';
-    }
+    if (amount === undefined || amount === null || isNaN(amount)) return '0';
     const symbol = currencySymbols[currency] || currency;
     const num = parseFloat(amount);
     if (isNaN(num)) return '0';
@@ -397,10 +395,11 @@ function openDeal(deal) {
         dealProgress = 1;
         updateProgressDisplay();
         
-        if (deal.sellerId === currentUser.id) {
-            showScreenById('dealCreatedScreen');
-        } else {
+        // Если пользователь НЕ продавец (покупатель) → сразу показываем оплату
+        if (deal.sellerId !== currentUser.id) {
             openPaymentScreen(deal);
+        } else {
+            showScreenById('dealCreatedScreen');
         }
     } catch(e) {
         console.error('openDeal error:', e);
@@ -442,6 +441,7 @@ function openPaymentScreen(deal) {
         const openBtn = document.getElementById('openPaymentOptionsBtn');
         if (openBtn) openBtn.textContent = 'Оплатить';
         
+        // Сразу показываем экран оплаты
         showScreenById('paymentScreen');
     } catch(e) {
         console.error('openPaymentScreen error:', e);
@@ -661,17 +661,15 @@ function setupTelegramEventHandler() {
                     status: data.status || 'waiting_buyer'
                 };
                 
-                // Сохраняем в локальное хранилище
                 if (!deals.find(d => d.id === newDeal.id)) {
                     deals.push(newDeal);
                     saveDeals();
                 }
                 
-                // Если это ответ на запрос из startapp
                 if (pendingDealRequest === newDeal.id) {
                     pendingDealRequest = null;
-                    openDeal(newDeal);
                 }
+                openDeal(newDeal);
             } else if (data.action === 'deal_not_found') {
                 if (pendingDealRequest) {
                     pendingDealRequest = null;
@@ -776,7 +774,6 @@ function renderShieldIcon() {
 // ========== ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ ==========
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        // Устанавливаем обработчик событий от бота
         setupTelegramEventHandler();
         
         const createDealBtn = document.getElementById('createDealBtn');
@@ -847,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'backToWalletFromTon': 'walletScreen',
             'backToWalletFromList': 'walletScreen',
             'backToCryptoSelect': 'selectCryptoScreen',
-            'backToDealFromPayment': 'dealProgressScreen'
+            'backToDealFromPayment': 'mainScreen'
         };
         
         for (const [id, screen] of Object.entries(backButtons)) {
@@ -948,7 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Обработчики для оплаты
         const openPaymentOptionsBtn = document.getElementById('openPaymentOptionsBtn');
         if (openPaymentOptionsBtn) openPaymentOptionsBtn.onclick = togglePaymentOptions;
         
@@ -964,7 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmCryptoPaymentBtn = document.getElementById('confirmCryptoPaymentBtn');
         if (confirmCryptoPaymentBtn) confirmCryptoPaymentBtn.onclick = confirmCryptoPayment;
         
-        // Добавляем кнопки переключения внутри блоков
         const cardBlock = document.getElementById('cardPaymentBlock');
         const cryptoBlock = document.getElementById('cryptoPaymentBlock');
         
@@ -999,14 +994,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderWalletIcon();
         renderAddUserIcon();
 
-        // ========== АВТОМАТИЧЕСКОЕ ОТКРЫТИЕ ПО ССЫЛКЕ (startapp) ==========
+        // ========== АВТОМАТИЧЕСКОЕ ОТКРЫТИЕ ПО ССЫЛКЕ ==========
         const startParam = getStartParam();
         if (startParam) {
             console.log('Start param:', startParam);
             
             if (startParam.startsWith('pay_') || startParam.startsWith('deal_')) {
-                const prefix = startParam.includes('pay_') ? 'pay_' : 'deal_';
-                const cleanId = startParam.replace(prefix, '');
+                const cleanId = startParam.replace(/^(pay_|deal_)/, '');
                 const dealId = '#' + cleanId;
                 
                 const foundDeal = deals.find(d => d.id === dealId);
@@ -1015,7 +1009,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         openDeal(foundDeal);
                     }, 500);
                 } else {
-                    // ЗАПРАШИВАЕМ У БОТА ДАННЫЕ СДЕЛКИ
                     console.log('Deal not found locally, requesting from bot:', dealId);
                     pendingDealRequest = dealId;
                     if (tg && tg.sendData) {
@@ -1024,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             deal_id: dealId
                         }));
                     }
-                    showMessage('Загрузка', 'Получаем данные о сделке от сервера...');
+                    showMessage('Загрузка', 'Получаем данные о сделке...');
                 }
             }
         }
