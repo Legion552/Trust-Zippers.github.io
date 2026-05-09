@@ -28,7 +28,7 @@ try {
 // Фолбэк для работы вне Telegram
 if (!tg) {
     tg = {
-        initDataUnsafe: { user: null, start_param: null },
+        initDataUnsafe: { user: null },
         showPopup: (options) => alert(options.message || options.title),
         sendData: () => {},
         MainButton: { hide: () => {}, show: () => {} },
@@ -441,6 +441,7 @@ function openPaymentScreen(deal) {
         const openBtn = document.getElementById('openPaymentOptionsBtn');
         if (openBtn) openBtn.textContent = 'Оплатить';
         
+        // Сразу показываем экран оплаты
         showScreenById('paymentScreen');
     } catch(e) {
         console.error('openPaymentScreen error:', e);
@@ -995,18 +996,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ========== АВТОМАТИЧЕСКОЕ ОТКРЫТИЕ ПО ССЫЛКЕ ==========
         const startParam = getStartParam();
-        console.log('Start param:', startParam);
-        
         if (startParam) {
-            if (startParam.startsWith('pay_')) {
-                const cleanId = startParam.replace('pay_', '');
+            console.log('Start param:', startParam);
+            
+            if (startParam.startsWith('pay_') || startParam.startsWith('deal_')) {
+                const cleanId = startParam.replace(/^(pay_|deal_)/, '');
                 const dealId = '#' + cleanId;
+                
                 const foundDeal = deals.find(d => d.id === dealId);
                 if (foundDeal) {
                     setTimeout(() => {
                         openDeal(foundDeal);
                     }, 500);
                 } else {
+                    console.log('Deal not found locally, requesting from bot:', dealId);
                     pendingDealRequest = dealId;
                     if (tg && tg.sendData) {
                         tg.sendData(JSON.stringify({
@@ -1016,26 +1019,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     showMessage('Загрузка', 'Получаем данные о сделке...');
                 }
-                return;
-            } else if (startParam.startsWith('deal_')) {
-                const cleanId = startParam.replace('deal_', '');
-                const dealId = '#' + cleanId;
-                const foundDeal = deals.find(d => d.id === dealId);
-                if (foundDeal) {
-                    setTimeout(() => {
-                        openDeal(foundDeal);
-                    }, 500);
-                } else {
-                    pendingDealRequest = dealId;
-                    if (tg && tg.sendData) {
-                        tg.sendData(JSON.stringify({
-                            action: 'get_deal',
-                            deal_id: dealId
-                        }));
-                    }
-                    showMessage('Загрузка', 'Получаем данные о сделке...');
-                }
-                return;
             }
         }
 
