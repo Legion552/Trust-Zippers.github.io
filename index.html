@@ -1432,7 +1432,7 @@ function openDealById(dealId) {
 
 // ========== ОБРАБОТКА ОТВЕТОВ ОТ БОТА ==========
 if (tg && tg.onEvent) {
-    tg.onEvent('web_app_data_sent', (event) => {
+    Telegram.WebApp.onEvent('message', function(event) {
         try {
             const data = JSON.parse(event.data);
             console.log('Данные от бота:', data);
