@@ -701,7 +701,7 @@ function handleDealByLink(dealLinkId) {
 function setupTelegramEventHandler() {
     if (!tg || typeof tg.onEvent !== 'function') return;
     
-    tg.onEvent('web_app_data_sent', (event) => {
+    Telegram.WebApp.onEvent('message', function(event) {
         try {
             const data = JSON.parse(event.data);
             console.log('Получены данные от бота:', data);
