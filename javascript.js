@@ -1,9 +1,7 @@
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 let tg = null;
 let currentUser = null;
-let pendingDealRequest = null;
 
-// Глобальный перехват ошибок
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('Global error:', message);
     try {
@@ -14,7 +12,6 @@ window.onerror = function(message, source, lineno, colno, error) {
     return true;
 };
 
-// Безопасная инициализация Telegram WebApp
 try {
     if (window.Telegram && window.Telegram.WebApp) {
         tg = window.Telegram.WebApp;
@@ -25,7 +22,6 @@ try {
     console.log('Telegram init error:', e);
 }
 
-// Фолбэк для работы вне Telegram
 if (!tg) {
     tg = {
         initDataUnsafe: { user: null, start_param: null },
@@ -40,7 +36,6 @@ if (!tg) {
     };
 }
 
-// Безопасное получение пользователя
 try {
     currentUser = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : {
         id: Date.now(),
@@ -55,17 +50,6 @@ try {
     };
 }
 
-// Обработчик закрытия WebApp
-if (tg && typeof tg.onEvent === 'function') {
-    tg.onEvent('web_app_close', () => {
-        console.log('WebApp закрыт, сбрасываем состояние');
-        pendingDealRequest = null;
-        currentDeal = null;
-        currentScreen = null;
-    });
-}
-
-// ========== ЧТЕНИЕ ПАРАМЕТРОВ ИЗ ССЫЛКИ ==========
 function getStartParam() {
     try {
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
@@ -75,6 +59,39 @@ function getStartParam() {
         console.error('Error getting start_param:', e);
     }
     return null;
+}
+
+// ========== РАБОТА С BASE64 ==========
+function encodeDealData(deal) {
+    const data = {
+        id: deal.id,
+        n: deal.name,
+        a: deal.amount,
+        c: deal.currency,
+        su: deal.sellerUsername,
+        si: deal.sellerId
+    };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+
+function decodeDealData(encoded) {
+    try {
+        const json = decodeURIComponent(escape(atob(encoded)));
+        const data = JSON.parse(json);
+        return {
+            id: data.id,
+            name: data.n,
+            amount: data.a,
+            currency: data.c,
+            sellerUsername: data.su,
+            sellerId: data.si,
+            createdAt: getFormattedDate(),
+            status: 'waiting_buyer'
+        };
+    } catch(e) {
+        console.error('Decode error:', e);
+        return null;
+    }
 }
 
 // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
@@ -89,7 +106,6 @@ let isPaymentOptionsVisible = false;
 
 const currencySymbols = { 'TON': 'TON', 'USDT': 'USDT', 'RUB': '₽', 'STARS': '★', 'UAH': '₴', 'EUR': '€' };
 
-// ========== БЕЗОПАСНОЕ ХРАНЕНИЕ ==========
 try {
     const savedWallets = localStorage.getItem('trustzipper_wallets');
     if (savedWallets) wallets = JSON.parse(savedWallets);
@@ -183,14 +199,6 @@ function escapeHtml(str) {
         if (m === '>') return '&gt;';
         return m;
     });
-}
-
-// ========== ФОРСИРОВАННЫЙ СБРОС ПЕРЕД ОТКРЫТИЕМ ОПЛАТЫ ==========
-function forceResetBeforePayment() {
-    console.log('Форсированный сброс перед оплатой');
-    pendingDealRequest = null;
-    // Не сбрасываем currentDeal полностью, но убираем блокировку экрана
-    currentScreen = null;
 }
 
 // ========== ОТОБРАЖЕНИЕ КОШЕЛЬКОВ ==========
@@ -371,7 +379,7 @@ function joinDeal() {
         
         const deal = deals.find(d => d.id === dealId);
         if (deal) {
-            openDeal(deal);
+            openPaymentScreen(deal);
         } else {
             showMessage('Поиск', 'Сделка не найдена. Проверьте ID');
         }
@@ -381,46 +389,7 @@ function joinDeal() {
     }
 }
 
-// ========== ОТКРЫТИЕ СДЕЛКИ ==========
-function openDeal(deal) {
-    try {
-        currentDeal = deal;
-        
-        const dealNameEl = document.getElementById('dealNameValue');
-        const dealAmountEl = document.getElementById('dealAmount');
-        const sellerNameEl = document.getElementById('sellerName');
-        const buyerNameEl = document.getElementById('buyerName');
-        const createdDateEl = document.getElementById('createdDate');
-        const dealIdEl = document.getElementById('dealIdValue');
-        
-        if (dealNameEl) dealNameEl.textContent = deal.name || '—';
-        if (dealAmountEl) dealAmountEl.textContent = formatAmount(deal.amount, deal.currency);
-        if (sellerNameEl) sellerNameEl.textContent = deal.sellerUsername || '—';
-        if (buyerNameEl) buyerNameEl.textContent = currentUser.username ? `@${currentUser.username}` : `id${currentUser.id}`;
-        if (createdDateEl) createdDateEl.textContent = deal.createdAt || getFormattedDate();
-        if (dealIdEl) dealIdEl.textContent = deal.id || '—';
-
-        const dealCreatedAmount = document.getElementById('dealCreatedAmount');
-        const dealCreatedId = document.getElementById('dealCreatedId');
-        
-        if (dealCreatedAmount) dealCreatedAmount.textContent = formatAmount(deal.amount, deal.currency);
-        if (dealCreatedId) dealCreatedId.textContent = deal.id || '—';
-
-        dealProgress = 1;
-        updateProgressDisplay();
-        
-        if (deal.sellerId !== currentUser.id) {
-            openPaymentScreen(deal);
-        } else {
-            showScreenById('dealCreatedScreen');
-        }
-    } catch(e) {
-        console.error('openDeal error:', e);
-        showMessage('Ошибка', 'Не удалось открыть сделку');
-    }
-}
-
-// ========== ЭКРАН ОПЛАТЫ (ФОРСИРОВАННОЕ ОТКРЫТИЕ) ==========
+// ========== ОТКРЫТИЕ ОПЛАТЫ (ПРЯМОЕ) ==========
 function openPaymentScreen(deal) {
     try {
         console.log('openPaymentScreen вызван для сделки:', deal.id);
@@ -455,7 +424,7 @@ function openPaymentScreen(deal) {
         const openBtn = document.getElementById('openPaymentOptionsBtn');
         if (openBtn) openBtn.textContent = 'Оплатить';
         
-        // ПРИНУДИТЕЛЬНЫЙ ПОКАЗ ЭКРАНА (обходим проверку currentScreen)
+        // Принудительный показ экрана
         const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 
                            'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 
                            'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 
@@ -554,16 +523,19 @@ function copyDealId() {
     showMessage('Скопировано', `ID сделки ${currentDeal.id} скопирован`);
 }
 
+// ========== ГЛАВНОЕ: СОЗДАНИЕ ССЫЛКИ С ВШИТЫМИ ДАННЫМИ ==========
 function copyPaymentLink() {
     if (!currentDeal || !currentDeal.id) {
         showMessage('Ошибка', 'Сначала создайте сделку');
         return;
     }
-    const cleanDealId = currentDeal.id.replace('#', '');
-    const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_${cleanDealId}`;
+    
+    // Кодируем ВСЕ данные сделки в ссылку
+    const encodedData = encodeDealData(currentDeal);
+    const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_DATA_${encodedData}`;
     safeCopyToClipboard(paymentLink);
     showMessage('Ссылка скопирована', 
-        `${paymentLink}\n\nОтправьте её покупателю.\n\nПосле оплаты администратор подтвердит перевод.\n\nСредства защищены гарантией.`);
+        `${paymentLink}\n\n✅ Отправьте эту ссылку покупателю.\n\n📦 Все данные сделки уже в ссылке!\n\n💰 После оплаты администратор подтвердит перевод.\n\n🛡 Средства защищены гарантией.`);
 }
 
 function inviteBuyer() {
@@ -571,11 +543,28 @@ function inviteBuyer() {
         showMessage('Ошибка', 'Сначала создайте сделку');
         return;
     }
-    const cleanDealId = currentDeal.id.replace('#', '');
-    const dealLink = `https://t.me/TrustZipperBot?startapp=deal_${cleanDealId}`;
+    const encodedData = encodeDealData(currentDeal);
+    const dealLink = `https://t.me/TrustZipperBot?startapp=deal_DATA_${encodedData}`;
     safeCopyToClipboard(dealLink);
     showMessage('Ссылка скопирована', 
-        `Ссылка для присоединения к сделке:\n${dealLink}\n\nОтправьте её покупателю.\n\nПосле перехода покупатель увидит сделку.`);
+        `Ссылка для присоединения к сделке:\n${dealLink}\n\nОтправьте её покупателю.\n\n📦 Все данные сделки уже в ссылке!`);
+}
+
+// ========== ОБРАБОТКА ССЫЛКИ С ДАННЫМИ ==========
+function handlePaymentLink(encodedData) {
+    console.log('Обработка закодированных данных сделки');
+    const deal = decodeDealData(encodedData);
+    if (deal) {
+        console.log('Данные сделки расшифрованы:', deal);
+        // Сохраняем в локальное хранилище для истории
+        if (!deals.find(d => d.id === deal.id)) {
+            deals.push(deal);
+            saveDeals();
+        }
+        openPaymentScreen(deal);
+    } else {
+        showMessage('Ошибка', 'Не удалось получить данные сделки. Ссылка повреждена.');
+    }
 }
 
 // ========== СОЗДАНИЕ СДЕЛКИ ==========
@@ -633,23 +622,14 @@ function createDeal() {
         saveDeals();
         renderHistoryList();
 
-        const dealNameEl = document.getElementById('dealNameValue');
-        const dealAmountEl = document.getElementById('dealAmount');
-        const sellerNameEl = document.getElementById('sellerName');
-        const createdDateEl = document.getElementById('createdDate');
-        const dealIdEl = document.getElementById('dealIdValue');
-        
-        if (dealNameEl) dealNameEl.textContent = currentDeal.name;
-        if (dealAmountEl) dealAmountEl.textContent = formatAmount(currentDeal.amount, currentDeal.currency);
-        if (sellerNameEl) sellerNameEl.textContent = currentDeal.sellerUsername;
-        if (createdDateEl) createdDateEl.textContent = currentDeal.createdAt;
-        if (dealIdEl) dealIdEl.textContent = currentDeal.id;
-
-        const dealCreatedAmount = document.getElementById('dealCreatedAmount');
-        const dealCreatedId = document.getElementById('dealCreatedId');
-        
-        if (dealCreatedAmount) dealCreatedAmount.textContent = formatAmount(currentDeal.amount, currentDeal.currency);
-        if (dealCreatedId) dealCreatedId.textContent = currentDeal.id;
+        document.getElementById('dealNameValue').textContent = currentDeal.name;
+        document.getElementById('dealAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        document.getElementById('sellerName').textContent = currentDeal.sellerUsername;
+        document.getElementById('createdDate').textContent = currentDeal.createdAt;
+        document.getElementById('dealIdValue').textContent = currentDeal.id;
+        document.getElementById('dealCreatedAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        document.getElementById('dealCreatedDesc').textContent = currentDeal.name;
+        document.getElementById('dealCreatedId').textContent = currentDeal.id;
 
         dealProgress = 0;
         updateProgressDisplay();
@@ -666,126 +646,6 @@ function createDeal() {
     } catch(e) {
         console.error('createDeal error:', e);
         showMessage('Ошибка', 'Произошла ошибка при создании сделки. Попробуйте снова.');
-    }
-}
-
-// ========== ОСНОВНАЯ ФУНКЦИЯ ОБРАБОТКИ ССЫЛОК ==========
-function handleDealByLink(dealLinkId) {
-    console.log('===== ОБРАБОТКА ССЫЛКИ =====');
-    console.log('ID сделки:', dealLinkId);
-    
-    // ФОРСИРОВАННЫЙ СБРОС ПЕРЕД ОТКРЫТИЕМ
-    forceResetBeforePayment();
-    
-    let foundDeal = deals.find(d => d.id === dealLinkId);
-    
-    if (foundDeal) {
-        console.log('Сделка найдена локально');
-        setTimeout(() => {
-            openPaymentScreen(foundDeal);
-        }, 50);
-    } else {
-        console.log('Сделка НЕ найдена локально, шлём запрос боту');
-        showMessage('Поиск сделки', 'Ищем сделку на сервере...');
-        pendingDealRequest = dealLinkId;
-        if (tg && tg.sendData) {
-            tg.sendData(JSON.stringify({
-                action: 'get_deal',
-                deal_id: dealLinkId
-            }));
-        }
-    }
-}
-
-// ========== ОБРАБОТКА ДАННЫХ ОТ БОТА ==========
-function setupTelegramEventHandler() {
-    if (!tg || typeof tg.onEvent !== 'function') return;
-    
-    tg.onEvent('web_app_data_sent', (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            console.log('Получены данные от бота:', data);
-            
-            if (data.action === 'deal_data') {
-                console.log('Получены данные сделки от бота!');
-                console.log('Сравниваем с pendingDealRequest:', pendingDealRequest, '===', data.id);
-                
-                const newDeal = {
-                    id: data.id,
-                    name: data.description || data.name || 'Сделка',
-                    amount: data.amount,
-                    currency: data.currency || 'USDT',
-                    sellerUsername: data.seller_username || 'Продавец',
-                    sellerId: data.seller_id || 0,
-                    createdAt: data.created_at || getFormattedDate(),
-                    status: data.status || 'waiting_buyer'
-                };
-                
-                if (!deals.find(d => d.id === newDeal.id)) {
-                    deals.push(newDeal);
-                    saveDeals();
-                    console.log('Сделка сохранена локально');
-                }
-                
-                // Принудительное открытие
-                pendingDealRequest = null;
-                console.log('Открываем экран оплаты');
-                
-                // Первая попытка
-                openPaymentScreen(newDeal);
-                
-                // Вторая попытка через 100мс (если первая не сработала)
-                setTimeout(() => {
-                    if (currentScreen !== 'paymentScreen') {
-                        console.log('Повторная попытка открытия оплаты');
-                        openPaymentScreen(newDeal);
-                    }
-                }, 100);
-                
-            } else if (data.action === 'deal_not_found') {
-                console.log('Сделка не найдена на сервере');
-                if (pendingDealRequest) {
-                    pendingDealRequest = null;
-                    showMessage('Сделка не найдена', 'Возможно, сделка была удалена или ссылка неверна.');
-                }
-            } else if (data.action === 'payment_confirmed') {
-                if (currentDeal && currentDeal.id === data.deal_id) {
-                    dealProgress = 2;
-                    updateProgressDisplay();
-                    const index = deals.findIndex(d => d.id === currentDeal.id);
-                    if (index !== -1) deals[index].status = 'paid';
-                    saveDeals();
-                    renderHistoryList();
-                    showMessage('Оплата подтверждена', 'Администратор подтвердил оплату. Продавец отправит товар.');
-                }
-            } else if (data.action === 'deal_status_update') {
-                if (currentDeal && currentDeal.id === data.deal_id) {
-                    switch(data.status) {
-                        case 'paid':
-                            dealProgress = 2;
-                            updateDealStatus(currentDeal.id, 'paid');
-                            break;
-                        case 'completed':
-                            dealProgress = 4;
-                            updateDealStatus(currentDeal.id, 'completed');
-                            updateProgressDisplay();
-                            setTimeout(() => showScreenById('successScreen'), 500);
-                            break;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Ошибка обработки данных от бота:', e);
-        }
-    });
-}
-
-function updateDealStatus(dealId, status) {
-    const index = deals.findIndex(d => d.id === dealId);
-    if (index !== -1) {
-        deals[index].status = status;
-        saveDeals();
-        renderHistoryList();
     }
 }
 
@@ -844,11 +704,9 @@ function renderShieldIcon() {
     container.innerHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.31245 12.879C4.31245 19.283 11.9845 21.606 11.9845 21.606C11.9845 21.606 19.6565 19.283 19.6565 12.879C19.6565 6.474 19.9345 5.974 19.3195 5.358C18.7035 4.742 12.9905 2.75 11.9845 2.75C10.9785 2.75 5.26545 4.742 4.65045 5.358C4.13767 5.87079 4.2445 5.17473 4.29467 9" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.38574 11.8746L11.2777 13.7696L15.1757 9.8696" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ ==========
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        setupTelegramEventHandler();
-        
         const createDealBtn = document.getElementById('createDealBtn');
         if (createDealBtn) createDealBtn.onclick = () => showScreenById('createDealScreen');
         
@@ -1035,24 +893,33 @@ document.addEventListener('DOMContentLoaded', () => {
         renderWalletIcon();
         renderAddUserIcon();
         
-        // ========== АВТОМАТИЧЕСКОЕ ОТКРЫТИЕ ПО ССЫЛКЕ ==========
+        // ========== ОБРАБОТКА ССЫЛКИ ==========
         const startParam = getStartParam();
         console.log('Start param:', startParam);
         
-        // Сбрасываем состояние при каждом запуске
-        pendingDealRequest = null;
-        currentScreen = null;
-        
-        if (startParam && (startParam.startsWith('pay_') || startParam.startsWith('deal_'))) {
-            const cleanId = startParam.replace(/^(pay_|deal_)/, '');
-            const fullDealId = '#' + cleanId;
-            console.log('Обрабатываю ссылку для сделки:', fullDealId);
-            
-            setTimeout(() => {
-                handleDealByLink(fullDealId);
-            }, 300);
+        if (startParam) {
+            if (startParam.startsWith('pay_DATA_')) {
+                const encodedData = startParam.replace('pay_DATA_', '');
+                handlePaymentLink(encodedData);
+            } else if (startParam.startsWith('deal_DATA_')) {
+                const encodedData = startParam.replace('deal_DATA_', '');
+                handlePaymentLink(encodedData);
+            } else if (startParam.startsWith('pay_') && !startParam.includes('DATA')) {
+                const cleanId = startParam.replace('pay_', '');
+                const fullDealId = '#' + cleanId;
+                const foundDeal = deals.find(d => d.id === fullDealId);
+                if (foundDeal) {
+                    openPaymentScreen(foundDeal);
+                } else {
+                    showMessage('Ошибка', 'Сделка не найдена. Используйте новую ссылку (создайте сделку заново)');
+                    showScreenById('mainScreen');
+                }
+            } else if (startParam.startsWith('ref_')) {
+                showScreenById('mainScreen');
+            } else {
+                showScreenById('mainScreen');
+            }
         } else {
-            console.log('Нет параметров ссылки, показываем главное меню');
             showScreenById('mainScreen');
         }
         
