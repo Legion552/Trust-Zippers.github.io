@@ -41,11 +41,20 @@ try {
     currentUser = { id: Date.now(), username: 'user_' + Math.floor(Math.random() * 10000), first_name: 'Пользователь' };
 }
 
-function getStartParam() {
-    try { return tg.initDataUnsafe?.start_param || null; } catch(e) { return null; }
+if (tg && typeof tg.onEvent === 'function') {
+    tg.onEvent('web_app_close', () => {
+        console.log('WebApp закрыт, сбрасываем состояние');
+        pendingDealRequest = null;
+        currentDeal = null;
+        currentScreen = null;
+    });
 }
 
-// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+function getStartParam() {
+    try { if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) return tg.initDataUnsafe.start_param; } catch(e) { console.error('Error getting start_param:', e); }
+    return null;
+}
+
 let wallets = {};
 let deals = [];
 let currentDeal = null;
@@ -57,13 +66,13 @@ let isPaymentOptionsVisible = false;
 
 const currencySymbols = { 'TON': 'TON', 'USDT': 'USDT', 'RUB': '₽', 'STARS': '★', 'UAH': '₴', 'EUR': '€' };
 
-try { const saved = localStorage.getItem('trustzipper_wallets'); if (saved) wallets = JSON.parse(saved); } catch(e) { wallets = {}; }
-try { const saved = localStorage.getItem('trustzipper_deals'); if (saved) deals = JSON.parse(saved); } catch(e) { deals = []; }
+try { const savedWallets = localStorage.getItem('trustzipper_wallets'); if (savedWallets) wallets = JSON.parse(savedWallets); } catch(e) { wallets = {}; }
+try { const savedDeals = localStorage.getItem('trustzipper_deals'); if (savedDeals) deals = JSON.parse(savedDeals); } catch(e) { deals = []; }
 
 function saveWallets() { try { localStorage.setItem('trustzipper_wallets', JSON.stringify(wallets)); } catch(e) {} }
 function saveDeals() { try { localStorage.setItem('trustzipper_deals', JSON.stringify(deals)); } catch(e) {} }
 
-// ========== КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ (ЭТО ГЛАВНОЕ!) ==========
+// ========== КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ (ГЛАВНЫЙ ФИКС!) ==========
 function encodeDealData(deal) {
     const data = {
         id: deal.id,
@@ -93,7 +102,6 @@ function decodeDealData(encoded) {
     } catch(e) { return null; }
 }
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ==========
 function generateDealId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '#';
@@ -121,7 +129,7 @@ function getFormattedDate() {
 }
 
 function showMessage(title, message) {
-    try { if (tg && typeof tg.showPopup === 'function') tg.showPopup({ title, message, buttons: [{ type: 'ok' }] }); else alert(title + ': ' + message); } catch(e) { alert(title + ': ' + message); }
+    try { if (tg && typeof tg.showPopup === 'function') tg.showPopup({ title: title, message: message, buttons: [{ type: 'ok' }] }); else alert(title + ': ' + message); } catch(e) { alert(title + ': ' + message); }
 }
 
 function safeCopyToClipboard(text) {
@@ -137,20 +145,38 @@ function escapeHtml(str) {
     return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; });
 }
 
-// ========== ОТОБРАЖЕНИЕ ==========
+function forceResetBeforePayment() {
+    console.log('Форсированный сброс перед оплатой');
+    pendingDealRequest = null;
+    currentScreen = null;
+}
+
 function renderWalletsList() {
     const container = document.getElementById('walletsList');
     if (!container) return;
-    if (Object.keys(wallets).length === 0) { container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">Нет кошельков</div>'; return; }
+    if (Object.keys(wallets).length === 0) { container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">У вас пока нет добавленных кошельков</div>'; return; }
     let html = '';
     for (const [type, data] of Object.entries(wallets)) {
         let typeName = '', icon = '';
-        switch(type) { case 'card': typeName = '💳 Банковская карта'; icon = '💳'; break; case 'btc': typeName = '₿ Bitcoin'; icon = '₿'; break; case 'eth': typeName = 'Ξ Ethereum'; icon = 'Ξ'; break; case 'ton': typeName = '👛 TON кошелёк'; icon = '👛'; break; case 'usdt': typeName = '$ USDT'; icon = '$'; break; default: typeName = type; icon = '📦'; }
+        switch(type) {
+            case 'card': typeName = '💳 Банковская карта'; icon = '💳'; break;
+            case 'btc': typeName = '₿ Bitcoin'; icon = '₿'; break;
+            case 'eth': typeName = 'Ξ Ethereum'; icon = 'Ξ'; break;
+            case 'ton': typeName = '👛 TON кошелёк'; icon = '👛'; break;
+            case 'usdt': typeName = '$ USDT'; icon = '$'; break;
+            default: typeName = type; icon = '📦';
+        }
         html += `<div class="wallet-item"><div class="wallet-type">${icon} ${typeName}</div><div class="wallet-address">${escapeHtml(data.address)}</div><span class="delete-wallet" data-wallet-type="${type}">🗑 Удалить</span></div>`;
     }
     container.innerHTML = html;
     document.querySelectorAll('.delete-wallet').forEach(el => {
-        el.addEventListener('click', (e) => { const walletType = e.target.getAttribute('data-wallet-type'); delete wallets[walletType]; saveWallets(); renderWalletsList(); showMessage('Удалено', 'Кошелек удален'); });
+        el.addEventListener('click', (e) => {
+            const walletType = e.target.getAttribute('data-wallet-type');
+            delete wallets[walletType];
+            saveWallets();
+            renderWalletsList();
+            showMessage('Удалено', 'Кошелек удален');
+        });
     });
 }
 
@@ -158,13 +184,18 @@ function renderHistoryList() {
     const container = document.getElementById('historyList');
     if (!container) return;
     const userDeals = deals.filter(d => d.sellerId === currentUser.id);
-    if (userDeals.length === 0) { container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">Нет сделок</div>'; return; }
+    if (userDeals.length === 0) { container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">У вас пока нет сделок</div>'; return; }
     let html = '';
     const reversedDeals = [...userDeals].reverse();
     for (const deal of reversedDeals) {
         let statusText = '', statusClass = '';
-        switch(deal.status) { case 'completed': statusText = '✅ Завершена'; statusClass = 'status-completed'; break; case 'paid': statusText = '🟣 Оплачена'; statusClass = 'status-paid'; break; default: statusText = '⏳ Ожидание'; statusClass = 'status-waiting'; }
-        html += `<div class="deal-history-item"><div class="flex-between mb-2"><strong>${escapeHtml(deal.name)}</strong><span class="deal-status ${statusClass}">${statusText}</span></div><div class="flex-between mb-2"><span>${deal.amount} ${deal.currency}</span></div><div class="flex-between"><span style="font-family: monospace;">${deal.id}</span></div></div>`;
+        switch(deal.status) {
+            case 'completed': statusText = '✅ Завершена'; statusClass = 'status-completed'; break;
+            case 'paid': statusText = '🟣 Оплата подтверждена'; statusClass = 'status-paid'; break;
+            case 'waiting_buyer': statusText = '⏳ Ожидание покупателя'; statusClass = 'status-waiting'; break;
+            default: statusText = '⏳ В процессе'; statusClass = 'status-waiting';
+        }
+        html += `<div class="deal-history-item"><div class="flex-between mb-2"><strong>${escapeHtml(deal.name)}</strong><span class="deal-status ${statusClass}">${statusText}</span></div><div class="flex-between mb-2"><span>Сумма:</span><span>${deal.amount} ${deal.currency}</span></div><div class="flex-between"><span>ID:</span><span style="font-family: monospace; font-size: 12px;">${deal.id}</span></div><div style="font-size: 11px; color: #8a8f9e; margin-top: 4px;">${deal.createdAt}</div></div>`;
     }
     container.innerHTML = html;
 }
@@ -209,7 +240,7 @@ function showScreenById(screenId) {
 
 function updateReferralLink() {
     const linkInput = document.getElementById('referralLinkInput');
-    if (linkInput) { linkInput.value = `https://t.me/TrustZipperBot?startapp=ref_${currentUser.id}`; }
+    if (linkInput) { const refLink = `https://t.me/TrustZipperBot?startapp=ref_${currentUser.id}`; linkInput.value = refLink; }
 }
 
 function copyReferralLink() {
@@ -224,36 +255,68 @@ function joinDeal() {
         const dealId = input.value.trim();
         if (!dealId) { showMessage('Ошибка', 'Введите ID сделки'); return; }
         const deal = deals.find(d => d.id === dealId);
-        if (deal) { openPaymentScreen(deal); }
-        else { showMessage('Поиск', 'Сделка не найдена'); }
-    } catch(e) { console.error('joinDeal error:', e); showMessage('Ошибка', 'Ошибка при поиске'); }
+        if (deal) { openPaymentScreen(deal); } else { showMessage('Поиск', 'Сделка не найдена. Проверьте ID'); }
+    } catch(e) { console.error('joinDeal error:', e); showMessage('Ошибка', 'Произошла ошибка при поиске сделки'); }
 }
 
-// ========== ОПЛАТА ==========
+function openDeal(deal) {
+    try {
+        currentDeal = deal;
+        const dealNameEl = document.getElementById('dealNameValue');
+        const dealAmountEl = document.getElementById('dealAmount');
+        const sellerNameEl = document.getElementById('sellerName');
+        const buyerNameEl = document.getElementById('buyerName');
+        const createdDateEl = document.getElementById('createdDate');
+        const dealIdEl = document.getElementById('dealIdValue');
+        if (dealNameEl) dealNameEl.textContent = deal.name || '—';
+        if (dealAmountEl) dealAmountEl.textContent = formatAmount(deal.amount, deal.currency);
+        if (sellerNameEl) sellerNameEl.textContent = deal.sellerUsername || '—';
+        if (buyerNameEl) buyerNameEl.textContent = currentUser.username ? `@${currentUser.username}` : `id${currentUser.id}`;
+        if (createdDateEl) createdDateEl.textContent = deal.createdAt || getFormattedDate();
+        if (dealIdEl) dealIdEl.textContent = deal.id || '—';
+        const dealCreatedAmount = document.getElementById('dealCreatedAmount');
+        const dealCreatedId = document.getElementById('dealCreatedId');
+        if (dealCreatedAmount) dealCreatedAmount.textContent = formatAmount(deal.amount, deal.currency);
+        if (dealCreatedId) dealCreatedId.textContent = deal.id || '—';
+        dealProgress = 1;
+        updateProgressDisplay();
+        if (deal.sellerId !== currentUser.id) { openPaymentScreen(deal); } else { showScreenById('dealCreatedScreen'); }
+    } catch(e) { console.error('openDeal error:', e); showMessage('Ошибка', 'Не удалось открыть сделку'); }
+}
+
 function openPaymentScreen(deal) {
     try {
         console.log('openPaymentScreen вызван для сделки:', deal.id);
         currentDeal = deal;
+        const paymentDealName = document.getElementById('paymentDealName');
+        const paymentDealAmount = document.getElementById('paymentDealAmount');
+        const paymentDealId = document.getElementById('paymentDealId');
+        if (paymentDealName) paymentDealName.textContent = deal.name || '—';
+        if (paymentDealAmount) paymentDealAmount.textContent = formatAmount(deal.amount, deal.currency);
+        if (paymentDealId) paymentDealId.textContent = deal.id || '—';
         const formattedAmount = formatAmount(deal.amount, deal.currency);
-        if (document.getElementById('paymentDealName')) document.getElementById('paymentDealName').textContent = deal.name || '—';
-        if (document.getElementById('paymentDealAmount')) document.getElementById('paymentDealAmount').textContent = formattedAmount;
-        if (document.getElementById('paymentDealId')) document.getElementById('paymentDealId').textContent = deal.id || '—';
-        if (document.getElementById('cardAmount')) document.getElementById('cardAmount').textContent = formattedAmount;
-        if (document.getElementById('cryptoAmount')) document.getElementById('cryptoAmount').textContent = formattedAmount;
-        if (document.getElementById('cardAmountInline')) document.getElementById('cardAmountInline').textContent = formattedAmount;
-        if (document.getElementById('cryptoAmountInline')) document.getElementById('cryptoAmountInline').textContent = formattedAmount;
-        if (document.getElementById('cardPaymentBlock')) document.getElementById('cardPaymentBlock').classList.add('hidden');
-        if (document.getElementById('cryptoPaymentBlock')) document.getElementById('cryptoPaymentBlock').classList.add('hidden');
+        const cardAmount = document.getElementById('cardAmount');
+        const cryptoAmount = document.getElementById('cryptoAmount');
+        const cardAmountInline = document.getElementById('cardAmountInline');
+        const cryptoAmountInline = document.getElementById('cryptoAmountInline');
+        if (cardAmount) cardAmount.textContent = formattedAmount;
+        if (cryptoAmount) cryptoAmount.textContent = formattedAmount;
+        if (cardAmountInline) cardAmountInline.textContent = formattedAmount;
+        if (cryptoAmountInline) cryptoAmountInline.textContent = formattedAmount;
+        const cardBlock = document.getElementById('cardPaymentBlock');
+        const cryptoBlock = document.getElementById('cryptoPaymentBlock');
+        if (cardBlock) cardBlock.classList.add('hidden');
+        if (cryptoBlock) cryptoBlock.classList.add('hidden');
         isPaymentOptionsVisible = false;
-        if (document.getElementById('openPaymentOptionsBtn')) document.getElementById('openPaymentOptionsBtn').textContent = 'Оплатить';
-        
+        const openBtn = document.getElementById('openPaymentOptionsBtn');
+        if (openBtn) openBtn.textContent = 'Оплатить';
         const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'successScreen', 'paymentScreen'];
         allScreens.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
         const target = document.getElementById('paymentScreen');
         if (target) target.classList.remove('hidden');
         currentScreen = 'paymentScreen';
         console.log('Экран оплаты открыт');
-    } catch(e) { console.error('openPaymentScreen error:', e); showMessage('Ошибка', 'Не удалось открыть оплату'); }
+    } catch(e) { console.error('openPaymentScreen error:', e); showMessage('Ошибка', 'Не удалось открыть страницу оплаты'); }
 }
 
 function togglePaymentOptions() {
@@ -283,13 +346,16 @@ function switchToCrypto() {
     if (openBtn) openBtn.textContent = 'Оплата криптовалютой';
 }
 
-function copyCardNumber() { const cardNumber = document.getElementById('cardNumberDisplay')?.textContent; if (cardNumber) safeCopyToClipboard(cardNumber); }
-function copyWalletAddress() { const walletAddress = document.getElementById('walletAddress')?.textContent; if (walletAddress) safeCopyToClipboard(walletAddress); }
-function confirmCardPayment() { showMessage('Отправлено на проверку', 'Ожидайте 1-3 минуты'); }
-function confirmCryptoPayment() { showMessage('Отправлено на проверку', 'Ожидайте 2-5 минут'); }
+function copyCardNumber() { const cardNumber = document.getElementById('cardNumberDisplay')?.textContent; if (cardNumber) { safeCopyToClipboard(cardNumber); showMessage('Скопировано', 'Номер карты скопирован'); } }
+function copyWalletAddress() { const walletAddress = document.getElementById('walletAddress')?.textContent; if (walletAddress) { safeCopyToClipboard(walletAddress); showMessage('Скопировано', 'Адрес кошелька скопирован'); } }
+function confirmCardPayment() { showMessage('Отправлено на проверку', 'Ваше подтверждение оплаты отправлено администратору.\n\nОжидайте проверки в течение 1-3 минут.\n\nПри проблемах пишите @huntsboss'); }
+function confirmCryptoPayment() { showMessage('Отправлено на проверку', 'Ваше подтверждение оплаты отправлено администратору.\n\nОжидайте проверки транзакции (2-5 минут).\n\nПри проблемах пишите @huntsboss'); }
 
-// ========== КОПИРОВАНИЕ ==========
-function copyDealId() { if (!currentDeal) { showMessage('Ошибка', 'Сначала создайте сделку'); return; } safeCopyToClipboard(currentDeal.id); showMessage('Скопировано', `ID скопирован`); }
+function copyDealId() {
+    if (!currentDeal) { showMessage('Ошибка', 'Сначала создайте сделку'); return; }
+    safeCopyToClipboard(currentDeal.id);
+    showMessage('Скопировано', `ID сделки ${currentDeal.id} скопирован`);
+}
 
 // ========== НОВАЯ ССЫЛКА С ДАННЫМИ (ГЛАВНЫЙ ФИКС!) ==========
 function copyPaymentLink() {
@@ -297,7 +363,7 @@ function copyPaymentLink() {
     const encodedData = encodeDealData(currentDeal);
     const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_DATA_${encodedData}`;
     safeCopyToClipboard(paymentLink);
-    showMessage('✅ Ссылка готова!', 'Ссылка содержит ВСЕ данные о сделке!\n\nОтправьте её покупателю.\n\n✅ Работает для ЛЮБОГО человека без бота!');
+    showMessage('✅ Ссылка готова!', 'Ссылка содержит ВСЕ данные о сделке!\n\nОтправьте её покупателю.\n\n✅ Работает для ЛЮБОГО человека!\n\n💰 Бот не нужен для передачи данных!');
 }
 
 function inviteBuyer() {
@@ -305,38 +371,56 @@ function inviteBuyer() {
     const encodedData = encodeDealData(currentDeal);
     const dealLink = `https://t.me/TrustZipperBot?startapp=deal_DATA_${encodedData}`;
     safeCopyToClipboard(dealLink);
-    showMessage('Ссылка скопирована', 'Отправьте эту ссылку покупателю');
+    showMessage('Ссылка скопирована', `Ссылка для присоединения к сделке:\n${dealLink}\n\nОтправьте её покупателю.\n\nПосле перехода покупатель увидит сделку.`);
 }
 
-// ========== СОЗДАНИЕ СДЕЛКИ ==========
 function createDeal() {
     try {
         const nameInput = document.getElementById('dealName');
         const amountInput = document.getElementById('amount');
-        if (!nameInput || !amountInput) { showMessage('Ошибка', 'Ошибка формы'); return; }
+        const additionalInfoInput = document.getElementById('additionalInfo');
+        if (!nameInput || !amountInput) { showMessage('Ошибка', 'Ошибка инициализации формы'); return; }
         const name = nameInput.value.trim();
         let amount = parseFloat(amountInput.value);
-        if (isNaN(amount)) { showMessage('Ошибка', 'Введите сумму цифрами'); return; }
+        if (isNaN(amount)) { showMessage('Ошибка', 'Введите корректную сумму (цифрами)'); return; }
         const feePayerElem = document.querySelector('input[name="feePayer"]:checked');
         const feePayer = feePayerElem ? feePayerElem.value : 'buyer';
+        const additionalInfo = additionalInfoInput ? additionalInfoInput.value : '';
         if (!name) { showMessage('Ошибка', 'Введите название сделки'); return; }
-        if (amount < 0.1) { showMessage('Ошибка', 'Минимальная сумма 0.1'); return; }
+        if (amount < 0.1) { showMessage('Ошибка', 'Минимальная сумма: 0.1'); return; }
         const finalAmount = calculateAmountWithFee(amount, feePayer);
         const sellerUsername = currentUser.username ? `@${currentUser.username}` : `user_${currentUser.id}`;
         currentDeal = {
-            id: generateDealId(), name: name, amount: finalAmount, currency: selectedCurrency,
-            sellerId: currentUser.id, sellerUsername: sellerUsername, createdAt: getFormattedDate(), status: 'waiting_buyer'
+            id: generateDealId(), name: name, originalAmount: amount, amount: finalAmount,
+            currency: selectedCurrency, feePayer: feePayer, additionalInfo: additionalInfo,
+            sellerId: currentUser.id, sellerUsername: sellerUsername, sellerName: currentUser.first_name || 'Продавец',
+            createdAt: getFormattedDate(), status: 'waiting_buyer'
         };
         deals.push(currentDeal);
         saveDeals();
         renderHistoryList();
-        if (document.getElementById('dealCreatedAmount')) document.getElementById('dealCreatedAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
-        if (document.getElementById('dealCreatedId')) document.getElementById('dealCreatedId').textContent = currentDeal.id;
-        if (document.getElementById('dealCreatedDesc')) document.getElementById('dealCreatedDesc').textContent = currentDeal.name;
+        const dealNameEl = document.getElementById('dealNameValue');
+        const dealAmountEl = document.getElementById('dealAmount');
+        const sellerNameEl = document.getElementById('sellerName');
+        const createdDateEl = document.getElementById('createdDate');
+        const dealIdEl = document.getElementById('dealIdValue');
+        if (dealNameEl) dealNameEl.textContent = currentDeal.name;
+        if (dealAmountEl) dealAmountEl.textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        if (sellerNameEl) sellerNameEl.textContent = currentDeal.sellerUsername;
+        if (createdDateEl) createdDateEl.textContent = currentDeal.createdAt;
+        if (dealIdEl) dealIdEl.textContent = currentDeal.id;
+        const dealCreatedAmount = document.getElementById('dealCreatedAmount');
+        const dealCreatedId = document.getElementById('dealCreatedId');
+        if (dealCreatedAmount) dealCreatedAmount.textContent = formatAmount(currentDeal.amount, currentDeal.currency);
+        if (dealCreatedId) dealCreatedId.textContent = currentDeal.id;
+        dealProgress = 0;
+        updateProgressDisplay();
         showScreenById('dealCreatedScreen');
-        if (nameInput) nameInput.value = '';
+        nameInput.value = '';
         if (amountInput) amountInput.value = '';
-    } catch(e) { console.error('createDeal error:', e); showMessage('Ошибка', 'Ошибка создания сделки'); }
+        if (additionalInfoInput) additionalInfoInput.value = '';
+        if (document.getElementById('charCount')) { document.getElementById('charCount').textContent = '0 / 20'; }
+    } catch(e) { console.error('createDeal error:', e); showMessage('Ошибка', 'Произошла ошибка при создании сделки. Попробуйте снова.'); }
 }
 
 // ========== ОБРАБОТКА ССЫЛКИ (ГЛАВНЫЙ ФИКС!) ==========
@@ -349,7 +433,7 @@ function processStartParam() {
     
     if (!startParam) { showScreenById('mainScreen'); return; }
     
-    // НОВЫЙ ФОРМАТ: pay_DATA_... или deal_DATA_... (ДАННЫЕ В ССЫЛКЕ!)
+    // НОВЫЙ ФОРМАТ: pay_DATA_... (ДАННЫЕ В ССЫЛКЕ, БЕЗ БОТА!)
     if (startParam.includes('_DATA_')) {
         let parts = startParam.split('_DATA_');
         if (parts.length >= 2) {
@@ -370,7 +454,6 @@ function processStartParam() {
         let dealId = '#' + cleanId;
         let deal = deals.find(d => d.id === dealId);
         if (deal) { linkProcessed = true; openPaymentScreen(deal); return; }
-        else { showMessage('Ошибка', 'Сделка не найдена. Создайте новую сделку'); showScreenById('mainScreen'); return; }
     }
     
     showScreenById('mainScreen');
@@ -390,17 +473,38 @@ function renderShieldIcon() { const c = document.getElementById('shieldIcon'); i
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        document.getElementById('createDealBtn').onclick = () => showScreenById('createDealScreen');
-        document.getElementById('submitDealBtn').onclick = createDeal;
-        document.getElementById('copyPaymentLinkBtn').onclick = copyPaymentLink;
-        document.getElementById('copyDealIdBtn').onclick = copyDealId;
-        document.getElementById('inviteBuyerBtn').onclick = inviteBuyer;
-        document.getElementById('openPaymentOptionsBtn').onclick = togglePaymentOptions;
-        document.getElementById('copyCardNumberBtn').onclick = copyCardNumber;
-        document.getElementById('copyWalletBtn').onclick = copyWalletAddress;
-        document.getElementById('confirmCardPaymentBtn').onclick = confirmCardPayment;
-        document.getElementById('confirmCryptoPaymentBtn').onclick = confirmCryptoPayment;
-        document.getElementById('backToDealFromPayment').onclick = () => showScreenById('mainScreen');
+        const createDealBtn = document.getElementById('createDealBtn');
+        if (createDealBtn) createDealBtn.onclick = () => showScreenById('createDealScreen');
+        
+        const submitDealBtn = document.getElementById('submitDealBtn');
+        if (submitDealBtn) submitDealBtn.onclick = createDeal;
+        
+        const copyPaymentLinkBtn = document.getElementById('copyPaymentLinkBtn');
+        if (copyPaymentLinkBtn) copyPaymentLinkBtn.onclick = copyPaymentLink;
+        
+        const copyDealIdBtn = document.getElementById('copyDealIdBtn');
+        if (copyDealIdBtn) copyDealIdBtn.onclick = copyDealId;
+        
+        const inviteBuyerBtn = document.getElementById('inviteBuyerBtn');
+        if (inviteBuyerBtn) inviteBuyerBtn.onclick = inviteBuyer;
+        
+        const openPaymentOptionsBtn = document.getElementById('openPaymentOptionsBtn');
+        if (openPaymentOptionsBtn) openPaymentOptionsBtn.onclick = togglePaymentOptions;
+        
+        const copyCardNumberBtn = document.getElementById('copyCardNumberBtn');
+        if (copyCardNumberBtn) copyCardNumberBtn.onclick = copyCardNumber;
+        
+        const copyWalletBtn = document.getElementById('copyWalletBtn');
+        if (copyWalletBtn) copyWalletBtn.onclick = copyWalletAddress;
+        
+        const confirmCardPaymentBtn = document.getElementById('confirmCardPaymentBtn');
+        if (confirmCardPaymentBtn) confirmCardPaymentBtn.onclick = confirmCardPayment;
+        
+        const confirmCryptoPaymentBtn = document.getElementById('confirmCryptoPaymentBtn');
+        if (confirmCryptoPaymentBtn) confirmCryptoPaymentBtn.onclick = confirmCryptoPayment;
+        
+        const backToDealFromPayment = document.getElementById('backToDealFromPayment');
+        if (backToDealFromPayment) backToDealFromPayment.onclick = () => showScreenById('mainScreen');
         
         const backButtons = {
             'backToMainFromJoin': 'mainScreen', 'backToMainFromInfo': 'mainScreen', 'backToMainFromSupport': 'mainScreen',
@@ -410,26 +514,100 @@ document.addEventListener('DOMContentLoaded', () => {
             'backToWalletFromCard': 'walletScreen', 'backToWalletFromCrypto': 'walletScreen', 'backToWalletFromTon': 'walletScreen',
             'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen'
         };
-        for (const [id, screen] of Object.entries(backButtons)) { const el = document.getElementById(id); if (el) el.onclick = () => showScreenById(screen); }
+        
+        for (const [id, screen] of Object.entries(backButtons)) {
+            const el = document.getElementById(id);
+            if (el) el.onclick = () => showScreenById(screen);
+        }
         
         document.querySelectorAll('[data-wallet-action="add_card"]').forEach(el => { el.onclick = () => showScreenById('addCardScreen'); });
         document.querySelectorAll('[data-wallet-action="add_crypto"]').forEach(el => { el.onclick = () => showScreenById('selectCryptoScreen'); });
         document.querySelectorAll('[data-wallet-action="add_ton"]').forEach(el => { el.onclick = () => showScreenById('addTonScreen'); });
         document.querySelectorAll('[data-wallet-action="list_wallets"]').forEach(el => { el.onclick = () => showScreenById('listWalletsScreen'); });
         
-        document.getElementById('saveCardBtn').onclick = () => { const cardNumber = document.getElementById('cardNumber').value.trim(); if (!cardNumber) { showMessage('Ошибка', 'Введите номер'); return; } wallets.card = { address: cardNumber }; saveWallets(); showMessage('Успех', 'Карта сохранена'); showScreenById('walletScreen'); };
+        const saveCardBtn = document.getElementById('saveCardBtn');
+        if (saveCardBtn) {
+            saveCardBtn.onclick = () => {
+                const cardNumber = document.getElementById('cardNumber').value.trim();
+                if (!cardNumber) { showMessage('Ошибка', 'Введите номер карты'); return; }
+                wallets.card = { address: cardNumber };
+                saveWallets();
+                showMessage('Успех', 'Карта сохранена');
+                showScreenById('walletScreen');
+            };
+        }
         
-        document.querySelectorAll('[data-crypto-type]').forEach(el => { el.onclick = () => { pendingCryptoType = el.getAttribute('data-crypto-type'); const titles = { btc: 'Bitcoin', eth: 'Ethereum', usdt: 'USDT' }; const prompts = { btc: 'BTC адрес:', eth: 'ETH адрес:', usdt: 'USDT адрес:' }; document.getElementById('cryptoScreenTitle').textContent = `Добавление ${titles[pendingCryptoType]}`; document.getElementById('cryptoPrompt').textContent = prompts[pendingCryptoType]; showScreenById('addCryptoScreen'); }; });
+        document.querySelectorAll('[data-crypto-type]').forEach(el => {
+            el.onclick = () => {
+                pendingCryptoType = el.getAttribute('data-crypto-type');
+                const titles = { btc: 'Bitcoin', eth: 'Ethereum', usdt: 'USDT' };
+                const prompts = { btc: 'Введите адрес BTC кошелька:', eth: 'Введите адрес ETH кошелька:', usdt: 'Введите адрес USDT кошелька:' };
+                const titleEl = document.getElementById('cryptoScreenTitle');
+                const promptEl = document.getElementById('cryptoPrompt');
+                if (titleEl) titleEl.textContent = `Добавление ${titles[pendingCryptoType]}`;
+                if (promptEl) promptEl.textContent = prompts[pendingCryptoType];
+                showScreenById('addCryptoScreen');
+            };
+        });
         
-        document.getElementById('saveCryptoBtn').onclick = () => { const address = document.getElementById('cryptoAddress').value.trim(); if (!address) { showMessage('Ошибка', 'Введите адрес'); return; } wallets[pendingCryptoType] = { address: address }; saveWallets(); showMessage('Успех', 'Кошелек сохранен'); showScreenById('walletScreen'); };
-        document.getElementById('saveTonBtn').onclick = () => { const address = document.getElementById('tonAddress').value.trim(); if (!address) { showMessage('Ошибка', 'Введите адрес TON'); return; } wallets.ton = { address: address }; saveWallets(); showMessage('Успех', 'TON сохранен'); showScreenById('walletScreen'); };
+        const saveCryptoBtn = document.getElementById('saveCryptoBtn');
+        if (saveCryptoBtn) {
+            saveCryptoBtn.onclick = () => {
+                const address = document.getElementById('cryptoAddress').value.trim();
+                if (!address) { showMessage('Ошибка', 'Введите адрес кошелька'); return; }
+                wallets[pendingCryptoType] = { address: address };
+                saveWallets();
+                showMessage('Успех', `${pendingCryptoType.toUpperCase()} кошелек сохранен`);
+                showScreenById('walletScreen');
+            };
+        }
         
-        document.querySelectorAll('.currency-item').forEach(el => { el.onclick = () => { document.querySelectorAll('.currency-item').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedCurrency = el.getAttribute('data-currency'); }; });
-        const firstCurrency = document.querySelector('.currency-item'); if (firstCurrency) firstCurrency.classList.add('selected');
+        const saveTonBtn = document.getElementById('saveTonBtn');
+        if (saveTonBtn) {
+            saveTonBtn.onclick = () => {
+                const address = document.getElementById('tonAddress').value.trim();
+                if (!address) { showMessage('Ошибка', 'Введите адрес TON кошелька'); return; }
+                wallets.ton = { address: address };
+                saveWallets();
+                showMessage('Успех', 'TON кошелек сохранен');
+                showScreenById('walletScreen');
+            };
+        }
         
-        document.getElementById('additionalInfo')?.addEventListener('input', function(e) { const count = e.target.value.length; const charCount = document.getElementById('charCount'); if (charCount) charCount.textContent = `${count} / 20`; if (count > 20) e.target.value = e.target.value.slice(0, 20); });
+        const copyReferralLinkBtn = document.getElementById('copyReferralLinkBtn');
+        if (copyReferralLinkBtn) copyReferralLinkBtn.onclick = copyReferralLink;
         
-        document.querySelectorAll('.radio-option').forEach(option => { option.addEventListener('click', function() { const radio = this.querySelector('input[type="radio"]'); if (radio && !radio.checked) { radio.checked = true; document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected')); this.classList.add('selected'); } }); });
+        document.querySelectorAll('.currency-item').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.currency-item').forEach(c => c.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedCurrency = el.getAttribute('data-currency');
+            };
+        });
+        
+        const firstCurrency = document.querySelector('.currency-item');
+        if (firstCurrency) firstCurrency.classList.add('selected');
+        
+        const additionalInfo = document.getElementById('additionalInfo');
+        if (additionalInfo) {
+            additionalInfo.addEventListener('input', function(e) {
+                const count = e.target.value.length;
+                const charCount = document.getElementById('charCount');
+                if (charCount) charCount.textContent = `${count} / 20`;
+                if (count > 20) e.target.value = e.target.value.slice(0, 20);
+            });
+        }
+        
+        document.querySelectorAll('.radio-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio && !radio.checked) {
+                    radio.checked = true;
+                    document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                }
+            });
+        });
         
         document.querySelectorAll('[data-action="info"]').forEach(el => el.onclick = () => showScreenById('infoScreen'));
         document.querySelectorAll('[data-action="support"]').forEach(el => el.onclick = () => showScreenById('supportScreen'));
@@ -437,31 +615,75 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-action="wallet"]').forEach(el => el.onclick = () => showScreenById('walletScreen'));
         document.querySelectorAll('[data-action="history"]').forEach(el => el.onclick = () => showScreenById('historyScreen'));
         
-        document.getElementById('copyReferralLinkBtn').onclick = copyReferralLink;
-        
         const cardBlock = document.getElementById('cardPaymentBlock');
         const cryptoBlock = document.getElementById('cryptoPaymentBlock');
-        if (cardBlock && !document.getElementById('switchToCryptoBtn')) { const btn = document.createElement('button'); btn.id = 'switchToCryptoBtn'; btn.textContent = 'Перейти к криптовалюте'; btn.className = 'btn btn-secondary mt-2'; btn.style.marginTop = '12px'; btn.onclick = switchToCrypto; cardBlock.appendChild(btn); }
-        if (cryptoBlock && !document.getElementById('switchToCardBtn')) { const btn = document.createElement('button'); btn.id = 'switchToCardBtn'; btn.textContent = 'Перейти к оплате картой'; btn.className = 'btn btn-secondary mt-2'; btn.style.marginTop = '12px'; btn.onclick = switchToCard; cryptoBlock.appendChild(btn); }
+        
+        if (cardBlock && !document.getElementById('switchToCryptoBtn')) {
+            const switchToCryptoBtn = document.createElement('button');
+            switchToCryptoBtn.id = 'switchToCryptoBtn';
+            switchToCryptoBtn.textContent = 'Перейти к криптовалюте';
+            switchToCryptoBtn.className = 'btn btn-secondary mt-2';
+            switchToCryptoBtn.style.marginTop = '12px';
+            switchToCryptoBtn.onclick = switchToCrypto;
+            cardBlock.appendChild(switchToCryptoBtn);
+        }
+        
+        if (cryptoBlock && !document.getElementById('switchToCardBtn')) {
+            const switchToCardBtn = document.createElement('button');
+            switchToCardBtn.id = 'switchToCardBtn';
+            switchToCardBtn.textContent = 'Перейти к оплате картой';
+            switchToCardBtn.className = 'btn btn-secondary mt-2';
+            switchToCardBtn.style.marginTop = '12px';
+            switchToCardBtn.onclick = switchToCard;
+            cryptoBlock.appendChild(switchToCardBtn);
+        }
         
         if (tg && tg.MainButton && tg.MainButton.hide) tg.MainButton.hide();
         if (tg && tg.BackButton && tg.BackButton.hide) tg.BackButton.hide();
         
-        renderGiftIcon(); renderShieldIcon(); renderWorkIcon(); renderNotificationIcon(); renderInfoIcon(); renderProfileIcon(); renderChartIcon(); renderWalletIcon(); renderAddUserIcon();
+        renderGiftIcon();
+        renderShieldIcon();
+        renderWorkIcon();
+        renderNotificationIcon();
+        renderInfoIcon();
+        renderProfileIcon();
+        renderChartIcon();
+        renderWalletIcon();
+        renderAddUserIcon();
         
-        // ГЛАВНОЕ - ОБРАБОТКА ССЫЛКИ
+        // ========== ГЛАВНОЕ - ОБРАБОТКА ССЫЛКИ ==========
         const startParam = getStartParam();
         console.log('Start param:', startParam);
+        
         pendingDealRequest = null;
         currentScreen = null;
+        linkProcessed = false;
         
         setTimeout(() => { processStartParam(); }, 200);
         
-        if (tg && typeof tg.onEvent === 'function') { tg.onEvent('web_app_open', () => { setTimeout(() => { processStartParam(); }, 100); }); }
+        if (tg && typeof tg.onEvent === 'function') {
+            tg.onEvent('web_app_open', () => {
+                setTimeout(() => { processStartParam(); }, 100);
+            });
+        }
         
-    } catch(e) { console.error('Initialization error:', e); showMessage('Ошибка', 'Ошибка инициализации'); showScreenById('mainScreen'); }
+    } catch(e) {
+        console.error('Initialization error:', e);
+        showMessage('Ошибка', 'Ошибка инициализации приложения');
+        showScreenById('mainScreen');
+    }
 });
 
 window.advanceProgress = function() {
-    if (dealProgress < 4 && currentDeal) { dealProgress++; updateProgressDisplay(); if (dealProgress === 4 && currentDeal) { const index = deals.findIndex(d => d.id === currentDeal.id); if (index !== -1) deals[index].status = 'completed'; saveDeals(); renderHistoryList(); setTimeout(() => showScreenById('successScreen'), 500); } }
+    if (dealProgress < 4 && currentDeal) {
+        dealProgress++;
+        updateProgressDisplay();
+        if (dealProgress === 4 && currentDeal) {
+            const index = deals.findIndex(d => d.id === currentDeal.id);
+            if (index !== -1) deals[index].status = 'completed';
+            saveDeals();
+            renderHistoryList();
+            setTimeout(() => showScreenById('successScreen'), 500);
+        }
+    }
 };
