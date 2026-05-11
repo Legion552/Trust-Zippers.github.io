@@ -1192,7 +1192,7 @@ function showMessage(title, message) {
 
 function safeCopy(text) {
     if (!text) return;
-    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', '✅'); } catch(e) {}
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', 'Отправьте ссылку покупателю для оплаты сделки.'); } catch(e) {}
 }
 
 function escapeHtml(str) {
@@ -1322,7 +1322,6 @@ function copyPaymentLink() {
     const encodedData = encodeDealData(currentDeal);
     const paymentLink = `https://t.me/${BOT_USERNAME}?startapp=pay_DATA_${encodedData}`;
     safeCopy(paymentLink);
-    showMessage('✅ Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nОтправьте её покупателю.\n\n✅ Работает на ЛЮБОМ устройстве!');
 }
 
 function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
