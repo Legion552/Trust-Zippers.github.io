@@ -163,7 +163,7 @@ function renderHistoryList() {
 
 function updateReferralLink() {
     let linkInput = document.getElementById('referralLinkInput');
-    if (linkInput) linkInput.value = `https://t.me/TrustZipperBot?startapp=ref_${currentUser.id}`;
+    if (linkInput) linkInput.value = `https://t.me/TrustsZipperBot?startapp=ref_${currentUser.id}`;
 }
 
 // ======================================================
@@ -373,7 +373,7 @@ function createDeal() {
 function copyPaymentLink() {
     if (!currentDeal) { showMessage('Ошибка', 'Сделка не создана'); return; }
     const cleanId = currentDeal.id.replace('#', '');
-    const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_${cleanId}`;
+    const paymentLink = `https://t.me/TrustsZipperBot?startapp=pay_${cleanId}`;
     safeCopy(paymentLink);
     showMessage('Ссылка скопирована', 'Отправьте её покупателю');
 }
@@ -382,7 +382,7 @@ function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
 function inviteBuyer() {
     if (!currentDeal) { showMessage('Ошибка', 'Сначала создайте сделку'); return; }
     const cleanId = currentDeal.id.replace('#', '');
-    const link = `https://t.me/TrustZipperBot?startapp=deal_${cleanId}`;
+    const link = `https://t.me/TrustsZipperBot?startapp=deal_${cleanId}`;
     safeCopy(link);
     showMessage('Ссылка скопирована', 'Отправьте её покупателю');
 }
