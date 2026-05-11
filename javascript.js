@@ -8,6 +8,9 @@ let dealLoading = false;
 let currentLoadingTimeout = null;
 let linkAlreadyHandled = false;
 
+// ЕДИНОЕ ИМЯ БОТА (С БУКВОЙ S!)
+const BOT_USERNAME = 'TrustsZipperBot';
+
 // ======================================================
 // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
 // ======================================================
@@ -163,7 +166,7 @@ function renderHistoryList() {
 
 function updateReferralLink() {
     let linkInput = document.getElementById('referralLinkInput');
-    if (linkInput) linkInput.value = `https://t.me/TrustsZipperBot?startapp=ref_${currentUser.id}`;
+    if (linkInput) linkInput.value = `https://t.me/${BOT_USERNAME}?startapp=ref_${currentUser.id}`;
 }
 
 // ======================================================
@@ -237,49 +240,68 @@ function confirmCardPayment() { showMessage('Отправлено', 'Ожида�
 function confirmCryptoPayment() { showMessage('Отправлено', 'Ожидайте проверки 2-5 минут'); }
 
 // ======================================================
-// ОБРАБОТКА ОТВЕТОВ ОТ БОТА
+// ОБРАБОТКА ОТВЕТОВ ОТ БОТА (WebApp API)
 // ======================================================
 
 function setupBotMessageHandler() {
+    // Основной способ - через Telegram.WebApp.onEvent
+    if (tg && typeof tg.onEvent === 'function') {
+        tg.onEvent('web_app_data_sent', function(event) {
+            try {
+                let data = event.data;
+                if (typeof data === 'string') {
+                    try { data = JSON.parse(data); } catch(e) { return; }
+                }
+                console.log('ОТВЕТ ОТ БОТА (web_app_data_sent):', data);
+                processBotResponse(data);
+            } catch(err) {
+                console.error('Ошибка web_app_data_sent:', err);
+            }
+        });
+    }
+    
+    // Запасной способ - через window message
     window.addEventListener('message', function(event) {
         try {
             if (!event.data) return;
             let data = event.data;
-            if (typeof data === 'string') { try { data = JSON.parse(data); } catch(e) { return; } }
-            console.log('ОТВЕТ ОТ БОТА:', data);
-
-            if (data.action === 'deal_data') {
-                const cleanId = String(data.id || '').replace('#', '');
-                const newDeal = {
-                    id: '#' + cleanId,
-                    name: data.name || data.description || 'Сделка',
-                    amount: Number(data.amount || 0),
-                    currency: data.currency || 'USDT',
-                    sellerUsername: data.seller_username || '',
-                    sellerId: data.seller_id || null,
-                    createdAt: data.created_at || getFormattedDate(),
-                    status: data.status || 'waiting_buyer'
-                };
-                deals = deals.filter(d => d.id.replace('#', '') !== cleanId);
-                deals.push(newDeal);
-                saveDeals();
-                openPaymentScreen(newDeal);
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch(e) { return; }
             }
-
-            if (data.action === 'deal_not_found') {
-                clearTimeout(currentLoadingTimeout);
-                dealLoading = false;
-                showMessage('Ошибка', 'Сделка не найдена');
-                showScreenById('mainScreen');
-            }
+            console.log('ОТВЕТ ОТ БОТА (message):', data);
+            processBotResponse(data);
         } catch(err) {
-            console.error('Ошибка обработки:', err);
-            clearTimeout(currentLoadingTimeout);
-            dealLoading = false;
-            showMessage('Ошибка', 'Ошибка загрузки сделки');
-            showScreenById('mainScreen');
+            console.error('Ошибка message:', err);
         }
     });
+}
+
+function processBotResponse(data) {
+    if (data.action === 'deal_data') {
+        const cleanId = String(data.id || '').replace('#', '');
+        const newDeal = {
+            id: '#' + cleanId,
+            name: data.name || data.description || 'Сделка',
+            amount: Number(data.amount || 0),
+            currency: data.currency || 'USDT',
+            sellerUsername: data.seller_username || '',
+            sellerId: data.seller_id || null,
+            createdAt: data.created_at || getFormattedDate(),
+            status: data.status || 'waiting_buyer'
+        };
+        deals = deals.filter(d => d.id.replace('#', '') !== cleanId);
+        deals.push(newDeal);
+        saveDeals();
+        openPaymentScreen(newDeal);
+    }
+
+    if (data.action === 'deal_not_found') {
+        clearTimeout(currentLoadingTimeout);
+        dealLoading = false;
+        linkAlreadyHandled = false;
+        showMessage('Ошибка', 'Сделка не найдена');
+        showScreenById('mainScreen');
+    }
 }
 
 // ======================================================
@@ -307,14 +329,16 @@ function handleStartParam(startParam) {
     }
 
     dealLoading = true;
-    showScreenById('joinDealScreen');
+    showMessage('Загрузка', 'Получаем данные сделки...');
 
     try {
+        console.log('Отправляем запрос боту:', { action: 'get_deal', deal_id: fullDealId });
         tg.sendData(JSON.stringify({ action: 'get_deal', deal_id: fullDealId }));
         console.log('Запрос отправлен');
     } catch(e) {
         console.error('Ошибка sendData:', e);
         dealLoading = false;
+        linkAlreadyHandled = false;
         showMessage('Ошибка', 'Не удалось загрузить сделку');
         showScreenById('mainScreen');
         return;
@@ -325,7 +349,8 @@ function handleStartParam(startParam) {
         if (dealLoading) {
             console.error('ТАЙМАУТ');
             dealLoading = false;
-            showMessage('Ошибка', 'Сервер долго отвечает');
+            linkAlreadyHandled = false;
+            showMessage('Ошибка', 'Сервер долго отвечает. Попробуйте позже.');
             showScreenById('mainScreen');
         }
     }, 10000);
@@ -373,7 +398,7 @@ function createDeal() {
 function copyPaymentLink() {
     if (!currentDeal) { showMessage('Ошибка', 'Сделка не создана'); return; }
     const cleanId = currentDeal.id.replace('#', '');
-    const paymentLink = `https://t.me/TrustsZipperBot?startapp=pay_${cleanId}`;
+    const paymentLink = `https://t.me/${BOT_USERNAME}?startapp=pay_${cleanId}`;
     safeCopy(paymentLink);
     showMessage('Ссылка скопирована', 'Отправьте её покупателю');
 }
@@ -382,7 +407,7 @@ function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
 function inviteBuyer() {
     if (!currentDeal) { showMessage('Ошибка', 'Сначала создайте сделку'); return; }
     const cleanId = currentDeal.id.replace('#', '');
-    const link = `https://t.me/TrustsZipperBot?startapp=deal_${cleanId}`;
+    const link = `https://t.me/${BOT_USERNAME}?startapp=deal_${cleanId}`;
     safeCopy(link);
     showMessage('Ссылка скопирована', 'Отправьте её покупателю');
 }
@@ -492,10 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Telegram иногда долго отдаёт start_param
     setTimeout(() => {
         const startParam = getStartParam();
-        console.log('START PARAM:', startParam);
-        if (startParam) { handleStartParam(startParam); }
-        else { showScreenById('mainScreen'); }
-    }, 1200);
+        console.log('START PARAM FINAL:', startParam);
+        if (startParam) { 
+            handleStartParam(startParam); 
+        } else { 
+            showScreenById('mainScreen'); 
+        }
+    }, 500);
 });
 
 window.advanceProgress = function() {
