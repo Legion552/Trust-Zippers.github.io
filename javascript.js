@@ -1,8 +1,8 @@
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 let tg = null;
 let currentUser = null;
-let appInitialized = false;
-let pendingDealData = null;
+let pendingDealId = null;
+let dealsCache = {};
 
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('Global error:', message);
@@ -42,14 +42,10 @@ try {
 }
 
 function getStartParam() {
-    try {
-        let param = tg.initDataUnsafe?.start_param;
-        console.log('getStartParam() =', param);
-        return param;
-    } catch(e) { return null; }
+    try { return tg.initDataUnsafe?.start_param || null; } catch(e) { return null; }
 }
 
-// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+// ========== ХРАНЕНИЕ ==========
 let wallets = {};
 let deals = [];
 let currentDeal = null;
@@ -65,36 +61,6 @@ try { const saved = localStorage.getItem('trustzipper_deals'); if (saved) deals 
 
 function saveWallets() { try { localStorage.setItem('trustzipper_wallets', JSON.stringify(wallets)); } catch(e) {} }
 function saveDeals() { try { localStorage.setItem('trustzipper_deals', JSON.stringify(deals)); } catch(e) {} }
-
-// ========== КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ ==========
-function encodeDealData(deal) {
-    const data = {
-        id: deal.id,
-        n: deal.name,
-        a: deal.amount,
-        c: deal.currency,
-        su: deal.sellerUsername,
-        si: deal.sellerId
-    };
-    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-}
-
-function decodeDealData(encoded) {
-    try {
-        const json = decodeURIComponent(escape(atob(encoded)));
-        const data = JSON.parse(json);
-        return {
-            id: data.id,
-            name: data.n,
-            amount: data.a,
-            currency: data.c,
-            sellerUsername: data.su,
-            sellerId: data.si,
-            createdAt: new Date().toLocaleString(),
-            status: 'waiting_buyer'
-        };
-    } catch(e) { return null; }
-}
 
 // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
 function generateDealId() {
@@ -129,7 +95,7 @@ function showMessage(title, message) {
 
 function safeCopy(text) {
     if (!text) return;
-    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', text); } catch(e) {}
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', 'Ссылка скопирована'); } catch(e) {}
 }
 
 function escapeHtml(str) {
@@ -192,7 +158,7 @@ function showScreenById(screenId) {
 
 // ========== ОПЛАТА ==========
 function openPaymentScreen(deal) {
-    console.log('openPaymentScreen вызван, ID:', deal.id);
+    console.log('openPaymentScreen, ID:', deal.id);
     currentDeal = deal;
     let formattedAmount = formatAmount(deal.amount, deal.currency);
     if (document.getElementById('paymentDealName')) document.getElementById('paymentDealName').textContent = deal.name || '—';
@@ -244,72 +210,155 @@ function createDeal() {
     };
     deals.push(currentDeal);
     saveDeals();
+    
+    // Отправляем сделку в БД бота
+    try {
+        tg.sendData(JSON.stringify({ action: 'save_deal', deal: currentDeal }));
+        console.log('Сделка отправлена боту для сохранения');
+    } catch(e) { console.error('Ошибка отправки сделки боту:', e); }
+    
     if (document.getElementById('dealCreatedAmount')) document.getElementById('dealCreatedAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
     if (document.getElementById('dealCreatedId')) document.getElementById('dealCreatedId').textContent = currentDeal.id;
     if (document.getElementById('dealCreatedDesc')) document.getElementById('dealCreatedDesc').textContent = currentDeal.name;
     showScreenById('dealCreatedScreen');
 }
 
-// ========== НОВАЯ ССЫЛКА С ДАННЫМИ ==========
 function copyPaymentLink() {
     if (!currentDeal) { showMessage('Ошибка', 'Сначала создайте сделку'); return; }
-    const encodedData = encodeDealData(currentDeal);
-    const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_DATA_${encodedData}`;
+    const cleanId = currentDeal.id.replace('#', '');
+    const paymentLink = `https://t.me/TrustZipperBot?startapp=pay_${cleanId}`;
     safeCopy(paymentLink);
-    showMessage('✅ Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nРаботает на всех устройствах!');
+    showMessage('✅ Ссылка скопирована!', `ID сделки: ${currentDeal.id}\n\nОтправьте ссылку покупателю.\n\nРаботает на всех устройствах!`);
 }
 
 function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
 function inviteBuyer() {
     if (!currentDeal) { showMessage('Ошибка', 'Сначала создайте сделку'); return; }
-    const encodedData = encodeDealData(currentDeal);
-    const link = `https://t.me/TrustZipperBot?startapp=deal_DATA_${encodedData}`;
+    const cleanId = currentDeal.id.replace('#', '');
+    const link = `https://t.me/TrustZipperBot?startapp=deal_${cleanId}`;
     safeCopy(link);
     showMessage('Ссылка скопирована', 'Отправьте её покупателю');
 }
 
-// ========== ГЛАВНАЯ ФУНКЦИЯ - ОТКРЫТИЕ ПО ССЫЛКЕ ==========
-let linkOpened = false;
+// ========== ОБРАБОТКА ОТВЕТОВ ОТ БОТА (ГЛАВНОЕ!) ==========
+function setupBotMessageHandler() {
+    // Правильный способ обработки сообщений от бота
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.onEvent) {
+        Telegram.WebApp.onEvent('web_app_data_sent', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Ответ от бота:', data);
+                
+                if (data.action === 'deal_data') {
+                    console.log('Получены данные сделки от бота!');
+                    const newDeal = {
+                        id: data.id,
+                        name: data.name || data.description || 'Сделка',
+                        amount: data.amount,
+                        currency: data.currency || 'USDT',
+                        sellerUsername: data.seller_username,
+                        sellerId: data.seller_id,
+                        createdAt: data.created_at || getFormattedDate(),
+                        status: data.status || 'waiting_buyer'
+                    };
+                    
+                    if (!deals.find(d => d.id === newDeal.id)) {
+                        deals.push(newDeal);
+                        saveDeals();
+                    }
+                    
+                    openPaymentScreen(newDeal);
+                } else if (data.action === 'deal_not_found') {
+                    showMessage('Сделка не найдена', 'Проверьте ссылку или создайте новую сделку');
+                    showScreenById('mainScreen');
+                }
+            } catch(e) { console.error('Ошибка обработки ответа бота:', e); }
+        });
+    }
+    
+    // Альтернативный способ для старых версий
+    if (tg && typeof tg.onEvent === 'function') {
+        tg.onEvent('web_app_data_sent', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Ответ от бота (альтернативный):', data);
+                
+                if (data.action === 'deal_data') {
+                    const newDeal = {
+                        id: data.id,
+                        name: data.name || data.description || 'Сделка',
+                        amount: data.amount,
+                        currency: data.currency || 'USDT',
+                        sellerUsername: data.seller_username,
+                        sellerId: data.seller_id,
+                        createdAt: data.created_at || getFormattedDate(),
+                        status: data.status || 'waiting_buyer'
+                    };
+                    
+                    if (!deals.find(d => d.id === newDeal.id)) {
+                        deals.push(newDeal);
+                        saveDeals();
+                    }
+                    
+                    openPaymentScreen(newDeal);
+                } else if (data.action === 'deal_not_found') {
+                    showMessage('Сделка не найдена', 'Проверьте ссылку');
+                    showScreenById('mainScreen');
+                }
+            } catch(e) { console.error('Ошибка:', e); }
+        });
+    }
+}
 
-function openPaymentByLink(startParam) {
-    if (linkOpened) {
-        console.log('Ссылка уже обработана, пропускаем');
-        return true;
+// ========== ОБРАБОТКА ССЫЛКИ ==========
+let linkProcessed = false;
+
+function handleStartParam(startParam) {
+    if (linkProcessed) return;
+    
+    console.log('handleStartParam:', startParam);
+    
+    if (!startParam) {
+        showScreenById('mainScreen');
+        return;
     }
     
-    console.log('openPaymentByLink, startParam:', startParam);
-    
-    if (!startParam) return false;
-    
-    // НОВЫЙ ФОРМАТ: pay_DATA_... или deal_DATA_...
-    if (startParam.includes('_DATA_')) {
-        let parts = startParam.split('_DATA_');
-        if (parts.length >= 2) {
-            let encodedData = parts.slice(1).join('_DATA_');
-            let deal = decodeDealData(encodedData);
-            if (deal) {
-                console.log('Сделка успешно декодирована!');
-                linkOpened = true;
-                if (!deals.find(d => d.id === deal.id)) { deals.push(deal); saveDeals(); }
-                setTimeout(() => { openPaymentScreen(deal); }, 100);
-                return true;
+    // Формат: pay_XXXXX или deal_XXXXX (без решётки)
+    if (startParam.startsWith('pay_') || startParam.startsWith('deal_')) {
+        let cleanId = startParam.replace(/^(pay_|deal_)/, '');
+        let fullDealId = '#' + cleanId;
+        console.log('Ищем сделку:', fullDealId);
+        
+        // Сначала ищем в локальном кэше
+        let cachedDeal = deals.find(d => d.id === fullDealId);
+        if (cachedDeal) {
+            linkProcessed = true;
+            openPaymentScreen(cachedDeal);
+            return;
+        }
+        
+        // Если нет в кэше - запрашиваем у бота
+        console.log('Сделка не найдена локально, запрос к боту');
+        showMessage('Загрузка', 'Получаем данные сделки...');
+        linkProcessed = true;
+        
+        if (tg && tg.sendData) {
+            tg.sendData(JSON.stringify({
+                action: 'get_deal',
+                deal_id: fullDealId
+            }));
+        }
+        
+        // Таймаут на случай если бот не ответил
+        setTimeout(() => {
+            if (currentScreen !== 'paymentScreen') {
+                showMessage('Ошибка', 'Не удалось получить данные сделки. Проверьте ссылку.');
+                showScreenById('mainScreen');
             }
-        }
+        }, 5000);
+    } else {
+        showScreenById('mainScreen');
     }
-    
-    // СТАРЫЙ ФОРМАТ (для совместимости)
-    if (startParam.startsWith('pay_') && !startParam.includes('_DATA_')) {
-        let cleanId = startParam.replace('pay_', '');
-        let dealId = '#' + cleanId;
-        let deal = deals.find(d => d.id === dealId);
-        if (deal) {
-            linkOpened = true;
-            setTimeout(() => { openPaymentScreen(deal); }, 100);
-            return true;
-        }
-    }
-    
-    return false;
 }
 
 // ========== ИКОНКИ ==========
@@ -318,7 +367,10 @@ function renderShieldIcon() { let c = document.getElementById('shieldIcon'); if 
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM загружен');
+    console.log('DOM загружен, инициализация');
+    
+    // Настраиваем обработчик сообщений от бота
+    setupBotMessageHandler();
     
     // Назначаем обработчики кнопок
     let createBtn = document.getElementById('createDealBtn');
@@ -382,6 +434,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let saveTon = document.getElementById('saveTonBtn');
     if (saveTon) saveTon.onclick = () => { let addr = document.getElementById('tonAddress')?.value.trim(); if (!addr) { showMessage('Ошибка', 'Введите адрес'); return; } wallets.ton = { address: addr }; saveWallets(); showMessage('Успех', 'TON сохранен'); showScreenById('walletScreen'); };
     
+    let copyRef = document.getElementById('copyReferralLinkBtn');
+    if (copyRef) copyRef.onclick = () => { let link = document.getElementById('referralLinkInput')?.value; if (link) safeCopy(link); };
+    
     document.querySelectorAll('.currency-item').forEach(el => { el.onclick = () => { document.querySelectorAll('.currency-item').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedCurrency = el.dataset.currency; }; });
     document.querySelector('.currency-item')?.classList.add('selected');
     
@@ -395,40 +450,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-action="wallet"]').forEach(el => el.onclick = () => showScreenById('walletScreen'));
     document.querySelectorAll('[data-action="history"]').forEach(el => el.onclick = () => showScreenById('historyScreen'));
     
-    let copyRef = document.getElementById('copyReferralLinkBtn');
-    if (copyRef) copyRef.onclick = () => { let link = document.getElementById('referralLinkInput')?.value; if (link) safeCopy(link); };
-    
     let cardBlock = document.getElementById('cardPaymentBlock');
     let cryptoBlock = document.getElementById('cryptoPaymentBlock');
-    if (cardBlock && !document.getElementById('switchToCryptoBtn')) { let btn = document.createElement('button'); btn.id = 'switchToCryptoBtn'; btn.textContent = 'Перейти к криптовалюте'; btn.className = 'btn btn-secondary mt-2'; btn.onclick = () => { let cb = document.getElementById('cardPaymentBlock'); let cr = document.getElementById('cryptoPaymentBlock'); let ob = document.getElementById('openPaymentOptionsBtn'); if (cb) cb.classList.add('hidden'); if (cr) cr.classList.remove('hidden'); if (ob) ob.textContent = 'Оплата криптовалютой'; }; cardBlock.appendChild(btn); }
-    if (cryptoBlock && !document.getElementById('switchToCardBtn')) { let btn = document.createElement('button'); btn.id = 'switchToCardBtn'; btn.textContent = 'Перейти к оплате картой'; btn.className = 'btn btn-secondary mt-2'; btn.onclick = () => { let cb = document.getElementById('cardPaymentBlock'); let cr = document.getElementById('cryptoPaymentBlock'); let ob = document.getElementById('openPaymentOptionsBtn'); if (cb) cb.classList.remove('hidden'); if (cr) cr.classList.add('hidden'); if (ob) ob.textContent = 'Оплата картой'; }; cryptoBlock.appendChild(btn); }
+    if (cardBlock && !document.getElementById('switchToCryptoBtn')) { let btn = document.createElement('button'); btn.id = 'switchToCryptoBtn'; btn.textContent = 'Перейти к криптовалюте'; btn.className = 'btn btn-secondary mt-2'; btn.onclick = () => { if (cardBlock) cardBlock.classList.add('hidden'); if (cryptoBlock) cryptoBlock.classList.remove('hidden'); let ob = document.getElementById('openPaymentOptionsBtn'); if (ob) ob.textContent = 'Оплата криптовалютой'; }; cardBlock.appendChild(btn); }
+    if (cryptoBlock && !document.getElementById('switchToCardBtn')) { let btn = document.createElement('button'); btn.id = 'switchToCardBtn'; btn.textContent = 'Перейти к оплате картой'; btn.className = 'btn btn-secondary mt-2'; btn.onclick = () => { if (cardBlock) cardBlock.classList.remove('hidden'); if (cryptoBlock) cryptoBlock.classList.add('hidden'); let ob = document.getElementById('openPaymentOptionsBtn'); if (ob) ob.textContent = 'Оплата картой'; }; cryptoBlock.appendChild(btn); }
     
     renderGiftIcon();
     renderShieldIcon();
     
-    // ========== ГЛАВНАЯ ЛОГИКА - ОТКРЫТИЕ ПО ССЫЛКЕ ==========
+    // ========== ОБРАБОТКА ССЫЛКИ ПРИ ЗАПУСКЕ ==========
     let startParam = getStartParam();
-    console.log('=== СТАРТ ===');
+    console.log('=== ЗАПУСК ===');
     console.log('startParam:', startParam);
     
-    linkOpened = false;
+    linkProcessed = false;
     
-    // Пробуем открыть по ссылке
-    let opened = openPaymentByLink(startParam);
-    
-    if (!opened) {
-        // Если ссылка не обработана - показываем главное меню
+    if (startParam) {
+        handleStartParam(startParam);
+    } else {
         showScreenById('mainScreen');
     }
-    
-    // Дополнительная проверка через 500мс (на случай если параметр пришёл позже)
-    setTimeout(() => {
-        if (!linkOpened) {
-            let param = getStartParam();
-            console.log('Повторная проверка startParam:', param);
-            if (param && !linkOpened) {
-                openPaymentByLink(param);
-            }
-        }
-    }, 500);
 });
