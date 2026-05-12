@@ -806,12 +806,33 @@
                     <path d="M3.24976 13.9211V20.7271H10.0558V13.9211H3.24976Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
                 </svg>
             </div>
-            <h3 style="color: #a855f7; margin-bottom: 24px;">Сделка успешно создана!</h3>
-            <div style="margin-bottom: 16px; text-align: left;">
-                <div class="flex-between mb-2"><span>Сумма:</span><span id="dealCreatedAmount" style="font-weight: 700;">0</span></div>
-                <div class="flex-between mb-2"><span>ID сделки:</span><span id="dealCreatedId" style="font-family: monospace;">—</span></div>
+            <h3 style="color: #a855f7; margin-bottom: 16px;">Сделка успешно создана!</h3>
+            
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center;">
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #8a8f9e;">Сумма:</span>
+                    <span id="dealCreatedAmount" style="font-weight: 700; display: block; font-size: 20px;">0</span>
+                </div>
+                <div>
+                    <span style="color: #8a8f9e;">ID сделки:</span>
+                    <span id="dealCreatedId" style="font-family: monospace; display: block;">—</span>
+                </div>
             </div>
+            
             <button id="copyPaymentLinkBtn" class="btn" style="margin-bottom: 12px;">Копировать ссылку</button>
+            
+            <div style="text-align: center; margin-bottom: 16px;">
+                <p style="font-size: 13px; color: #8a8f9e; margin-bottom: 4px;">Отправьте ссылку покупателю для оплаты.</p>
+                <p style="font-size: 13px; color: #8a8f9e;">Средства защищены гарантией Trust Zipper</p>
+            </div>
+            
+            <button id="checkPaymentStatusBtn" class="btn btn-secondary" style="margin-bottom: 16px;">Проверить оплату</button>
+            
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">
+                Оплата проходит за 1-3 минуты<br>
+                Поддержка: <a href="https://t.me/huntsboss" style="color: #a855f7;">@huntsboss</a>
+            </p>
+            
             <button class="btn btn-secondary" id="backToMainFromDealCreatedBtn">На главную</button>
         </div>
     </div>
@@ -1288,6 +1309,27 @@ function confirmCryptoPayment() {
     }
 }
 
+// ========== ПРОВЕРКА СТАТУСА ОПЛАТЫ (ДЛЯ ПРОДАВЦА) ==========
+function checkPaymentStatus() {
+    if (!currentDeal) {
+        showMessage('Ошибка', 'Сделка не найдена');
+        return;
+    }
+    
+    // Ищем обновлённую сделку в localStorage
+    const updatedDeal = deals.find(d => d.id === currentDeal.id);
+    
+    if (updatedDeal && updatedDeal.status === 'paid') {
+        showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку. Переходим к подтверждению.');
+        // Обновляем currentDeal
+        currentDeal = updatedDeal;
+        // Открываем экран для продавца
+        openDealPaidScreen(currentDeal);
+    } else {
+        showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
+    }
+}
+
 // ========== ЭКРАН "СДЕЛКА ОПЛАЧЕНА" (ДЛЯ ПРОДАВЦА) ==========
 function openDealPaidScreen(deal) {
     if (!deal) deal = currentDeal;
@@ -1429,6 +1471,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('confirmCardPaymentBtn').onclick = confirmCardPayment;
     document.getElementById('confirmCryptoPaymentBtn').onclick = confirmCryptoPayment;
     document.getElementById('backToDealFromPayment').onclick = () => showScreenById('mainScreen');
+    
+    // Кнопка проверки оплаты (для продавца)
+    let checkPaymentBtn = document.getElementById('checkPaymentStatusBtn');
+    if (checkPaymentBtn) checkPaymentBtn.onclick = checkPaymentStatus;
     
     // Кнопка для продавца "Я получил(а) подарок"
     let confirmGoodsBtn = document.getElementById('confirmGoodsReceivedBtn');
