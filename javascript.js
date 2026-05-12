@@ -4,6 +4,7 @@
 
 let tg = null;
 let currentUser = null;
+let dealProgress = 0;
 
 // ======================================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -147,6 +148,15 @@ function escapeHtml(str) {
     return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; });
 }
 
+function updateDealStatus(dealId, status) {
+    const index = deals.findIndex(d => d.id === dealId);
+    if (index !== -1) {
+        deals[index].status = status;
+        saveDeals();
+        renderHistoryList();
+    }
+}
+
 // ======================================================
 // ОТОБРАЖЕНИЕ
 // ======================================================
@@ -194,7 +204,7 @@ function updateReferralLink() {
 
 function showScreenById(screenId) {
     if (currentScreen === screenId) return;
-    const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'paymentScreen', 'successScreen'];
+    const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'paymentScreen', 'dealPaidScreen', 'buyerConfirmedScreen', 'successScreen'];
     allScreens.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('hidden'); });
     let target = document.getElementById(screenId);
     if (target) target.classList.remove('hidden');
@@ -252,8 +262,55 @@ function togglePaymentOptions() {
 
 function copyCardNumber() { let num = document.getElementById('cardNumberDisplay')?.textContent; if (num) safeCopy(num); }
 function copyWalletAddress() { let addr = document.getElementById('walletAddress')?.textContent; if (addr) safeCopy(addr); }
-function confirmCardPayment() { showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты'); }
-function confirmCryptoPayment() { showMessage('Отправлено', 'Ожидайте проверки 2-5 минут'); }
+function confirmCardPayment() { 
+    showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты');
+    // После подтверждения оплаты показываем экран "Сделка оплачена"
+    if (currentDeal) {
+        updateDealStatus(currentDeal.id, 'paid');
+        setTimeout(() => openDealPaidScreen(currentDeal), 500);
+    }
+}
+function confirmCryptoPayment() { 
+    showMessage('Отправлено', 'Ожидайте проверки 2-5 минут');
+    if (currentDeal) {
+        updateDealStatus(currentDeal.id, 'paid');
+        setTimeout(() => openDealPaidScreen(currentDeal), 500);
+    }
+}
+
+// ======================================================
+// ЭКРАН "СДЕЛКА ОПЛАЧЕНА"
+// ======================================================
+
+function openDealPaidScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    console.log('ОТКРЫВАЕМ ЭКРАН ОПЛАЧЕНО:', deal);
+    
+    if (document.getElementById('paidDealId')) document.getElementById('paidDealId').textContent = deal.id;
+    if (document.getElementById('paidDealAmount')) document.getElementById('paidDealAmount').textContent = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('paidDealName')) document.getElementById('paidDealName').textContent = deal.name;
+    
+    showScreenById('dealPaidScreen');
+}
+
+// ======================================================
+// ЭКРАН "ПОКУПАТЕЛЬ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ"
+// ======================================================
+
+function openBuyerConfirmedScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    console.log('ОТКРЫВАЕМ ЭКРАН ПОДТВЕРЖДЕНИЯ:', deal);
+    
+    if (document.getElementById('confirmedDealId')) document.getElementById('confirmedDealId').textContent = deal.id;
+    if (document.getElementById('confirmedDealAmount')) document.getElementById('confirmedDealAmount').textContent = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('confirmedDealName')) document.getElementById('confirmedDealName').textContent = deal.name;
+    
+    showScreenById('buyerConfirmedScreen');
+}
 
 // ======================================================
 // СОЗДАНИЕ СДЕЛКИ
@@ -296,7 +353,7 @@ function copyPaymentLink() {
     const encodedData = encodeDealData(currentDeal);
     const paymentLink = `https://t.me/${BOT_USERNAME}?startapp=pay_DATA_${encodedData}`;
     safeCopy(paymentLink);
-    showMessage(' Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nОтправьте её покупателю.\n\n Работает на ЛЮБОМ устройстве!');
+    showMessage('Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nОтправьте её покупателю.\n\nРаботает на ЛЮБОМ устройстве!');
 }
 
 function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
@@ -399,6 +456,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let backPay = document.getElementById('backToDealFromPayment');
     if (backPay) backPay.onclick = () => showScreenById('mainScreen');
+    
+    // Кнопка "Я получил(а) подарок" на экране оплаты продавца
+    let confirmGoodsBtn = document.getElementById('confirmGoodsReceivedBtn');
+    if (confirmGoodsBtn) {
+        confirmGoodsBtn.onclick = () => {
+            showMessage('Отправлено на проверку', 
+                'Ваше подтверждение отправлено администратору.\n\n' +
+                'Ожидайте проверки. Средства поступят на ваш счёт в течение 5-10 минут после подтверждения.\n\n' +
+                'При проблемах пишите @huntsboss');
+            if (currentDeal) {
+                updateDealStatus(currentDeal.id, 'completed');
+                setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
+            }
+        };
+    }
+    
+    // Кнопка "На главную" на экране подтверждения
+    let backToMainFromConfirmed = document.getElementById('backToMainFromConfirmedBtn');
+    if (backToMainFromConfirmed) backToMainFromConfirmed.onclick = () => showScreenById('mainScreen');
 
     // Кнопки назад
     let backButtons = {
@@ -407,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'backToMainFromDealCreated': 'mainScreen', 'backToMainFromDealCreatedBtn': 'mainScreen', 'cancelCreateBtn': 'mainScreen',
         'backToMainFromWallet': 'mainScreen', 'backToMainFromHistory': 'mainScreen', 'backToMainFromReferral': 'mainScreen',
         'backToWalletFromCard': 'walletScreen', 'backToWalletFromCrypto': 'walletScreen', 'backToWalletFromTon': 'walletScreen',
-        'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen'
+        'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen', 'backToMainFromConfirmedBtn': 'mainScreen'
     };
     for (let [id, screen] of Object.entries(backButtons)) { let el = document.getElementById(id); if (el) el.onclick = () => showScreenById(screen); }
 
