@@ -58,7 +58,7 @@ let currentScreen = null;
 let isPaymentOptionsVisible = false;
 
 const currencySymbols = { 'TON': 'TON', 'USDT': 'USDT', 'RUB': '₽', 'STARS': '★', 'UAH': '₴', 'EUR': '€' };
-const BOT_USERNAME = 'TrustsZipperBot';
+const BOT_USERNAME = 'TrustZippersBot';
 
 // ======================================================
 // ХРАНЕНИЕ
@@ -139,7 +139,7 @@ function showMessage(title, message) {
 
 function safeCopy(text) {
     if (!text) return;
-    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', '✅'); } catch(e) {}
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', ''); } catch(e) {}
 }
 
 function escapeHtml(str) {
@@ -181,7 +181,7 @@ function renderHistoryList() {
     let html = '';
     for (const deal of [...userDeals].reverse()) {
         let statusText = '', statusClass = '';
-        switch(deal.status) { case 'completed': statusText = '✅ Завершена'; statusClass = 'status-completed'; break; case 'paid': statusText = '🟣 Оплачена'; statusClass = 'status-paid'; break; default: statusText = '⏳ Ожидание'; statusClass = 'status-waiting'; }
+        switch(deal.status) { case 'completed': statusText = ' Завершена'; statusClass = 'status-completed'; break; case 'paid': statusText = '🟣 Оплачена'; statusClass = 'status-paid'; break; default: statusText = '⏳ Ожидание'; statusClass = 'status-waiting'; }
         html += `<div class="deal-history-item"><div class="flex-between mb-1"><strong>${escapeHtml(deal.name)}</strong><span class="deal-status ${statusClass}">${statusText}</span></div><div class="flex-between mb-1"><span>${deal.amount} ${deal.currency}</span></div><div class="flex-between"><span style="font-family: monospace;">${deal.id}</span></div></div>`;
     }
     container.innerHTML = html;
@@ -296,7 +296,7 @@ function copyPaymentLink() {
     const encodedData = encodeDealData(currentDeal);
     const paymentLink = `https://t.me/${BOT_USERNAME}?startapp=pay_DATA_${encodedData}`;
     safeCopy(paymentLink);
-    showMessage('✅ Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nОтправьте её покупателю.\n\n✅ Работает на ЛЮБОМ устройстве!');
+    showMessage(' Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nОтправьте её покупателю.\n\n Работает на ЛЮБОМ устройстве!');
 }
 
 function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
