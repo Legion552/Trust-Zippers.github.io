@@ -57,6 +57,7 @@ let selectedCurrency = 'USDT';
 let pendingCryptoType = null;
 let currentScreen = null;
 let isPaymentOptionsVisible = false;
+let currentBuyerUsername = null;
 
 const currencySymbols = { 'TON': 'TON', 'USDT': 'USDT', 'RUB': '₽', 'STARS': '★', 'UAH': '₴', 'EUR': '€' };
 const BOT_USERNAME = 'TrustZippersBot';
@@ -71,6 +72,15 @@ try { const saved = localStorage.getItem('trustzipper_deals'); if (saved) deals 
 function saveWallets() { try { localStorage.setItem('trustzipper_wallets', JSON.stringify(wallets)); } catch(e) {} }
 function saveDeals() { try { localStorage.setItem('trustzipper_deals', JSON.stringify(deals)); } catch(e) {} }
 
+function updateDealStatus(dealId, status) {
+    const index = deals.findIndex(d => d.id === dealId);
+    if (index !== -1) {
+        deals[index].status = status;
+        saveDeals();
+        renderHistoryList();
+    }
+}
+
 // ======================================================
 // КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ (ГЛАВНОЕ!)
 // ======================================================
@@ -82,7 +92,8 @@ function encodeDealData(deal) {
         a: deal.amount,
         c: deal.currency,
         su: deal.sellerUsername,
-        si: deal.sellerId
+        si: deal.sellerId,
+        b: currentBuyerUsername
     };
     return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
 }
@@ -98,6 +109,7 @@ function decodeDealData(encoded) {
             currency: data.c,
             sellerUsername: data.su,
             sellerId: data.si,
+            buyerUsername: data.b || 'Покупатель',
             createdAt: getFormattedDate(),
             status: 'waiting_buyer'
         };
@@ -140,21 +152,12 @@ function showMessage(title, message) {
 
 function safeCopy(text) {
     if (!text) return;
-    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', ''); } catch(e) {}
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } } catch(e) {}
 }
 
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; });
-}
-
-function updateDealStatus(dealId, status) {
-    const index = deals.findIndex(d => d.id === dealId);
-    if (index !== -1) {
-        deals[index].status = status;
-        saveDeals();
-        renderHistoryList();
-    }
 }
 
 // ======================================================
@@ -167,9 +170,9 @@ function renderWalletsList() {
     if (Object.keys(wallets).length === 0) { container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">Нет кошельков</div>'; return; }
     let html = '';
     for (const [type, data] of Object.entries(wallets)) {
-        let typeName = '', icon = '';
-        switch(type) { case 'card': typeName = '💳 Карта'; icon = '💳'; break; case 'btc': typeName = '₿ Bitcoin'; icon = '₿'; break; case 'eth': typeName = 'Ξ Ethereum'; icon = 'Ξ'; break; case 'ton': typeName = '👛 TON'; icon = '👛'; break; case 'usdt': typeName = '$ USDT'; icon = '$'; break; default: typeName = type; icon = '📦'; }
-        html += `<div class="wallet-item"><div class="wallet-type">${icon} ${typeName}</div><div class="wallet-address">${escapeHtml(data.address)}</div><span class="delete-wallet" data-wallet-type="${type}">🗑 Удалить</span></div>`;
+        let typeName = '';
+        switch(type) { case 'card': typeName = 'Банковская карта'; break; case 'btc': typeName = 'Bitcoin'; break; case 'eth': typeName = 'Ethereum'; break; case 'ton': typeName = 'TON кошелёк'; break; case 'usdt': typeName = 'USDT'; break; default: typeName = type; }
+        html += `<div class="wallet-item"><div class="wallet-type">${typeName}</div><div class="wallet-address">${escapeHtml(data.address)}</div><span class="delete-wallet" data-wallet-type="${type}">Удалить</span></div>`;
     }
     container.innerHTML = html;
     document.querySelectorAll('.delete-wallet').forEach(el => {
@@ -190,9 +193,9 @@ function renderHistoryList() {
     if (userDeals.length === 0) { container.innerHTML = '<div style="text-align: center; color: #8a8f9e;">Нет сделок</div>'; return; }
     let html = '';
     for (const deal of [...userDeals].reverse()) {
-        let statusText = '', statusClass = '';
-        switch(deal.status) { case 'completed': statusText = ' Завершена'; statusClass = 'status-completed'; break; case 'paid': statusText = '🟣 Оплачена'; statusClass = 'status-paid'; break; default: statusText = '⏳ Ожидание'; statusClass = 'status-waiting'; }
-        html += `<div class="deal-history-item"><div class="flex-between mb-1"><strong>${escapeHtml(deal.name)}</strong><span class="deal-status ${statusClass}">${statusText}</span></div><div class="flex-between mb-1"><span>${deal.amount} ${deal.currency}</span></div><div class="flex-between"><span style="font-family: monospace;">${deal.id}</span></div></div>`;
+        let statusText = '';
+        switch(deal.status) { case 'completed': statusText = 'Завершена'; break; case 'paid': statusText = 'Оплачена'; break; default: statusText = 'Ожидание'; }
+        html += `<div class="deal-history-item"><div class="flex-between mb-1"><strong>${escapeHtml(deal.name)}</strong><span>${statusText}</span></div><div class="flex-between mb-1"><span>${deal.amount} ${deal.currency}</span></div><div class="flex-between"><span>${deal.id}</span></div></div>`;
     }
     container.innerHTML = html;
 }
@@ -204,7 +207,7 @@ function updateReferralLink() {
 
 function showScreenById(screenId) {
     if (currentScreen === screenId) return;
-    const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'paymentScreen', 'dealPaidScreen', 'buyerConfirmedScreen', 'successScreen'];
+    const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'paymentScreen', 'dealPaidScreen', 'buyerWaitingScreen', 'buyerConfirmedScreen', 'successScreen'];
     allScreens.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('hidden'); });
     let target = document.getElementById(screenId);
     if (target) target.classList.remove('hidden');
@@ -262,24 +265,25 @@ function togglePaymentOptions() {
 
 function copyCardNumber() { let num = document.getElementById('cardNumberDisplay')?.textContent; if (num) safeCopy(num); }
 function copyWalletAddress() { let addr = document.getElementById('walletAddress')?.textContent; if (addr) safeCopy(addr); }
+
 function confirmCardPayment() { 
     showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты');
-    // После подтверждения оплаты показываем экран "Сделка оплачена"
     if (currentDeal) {
         updateDealStatus(currentDeal.id, 'paid');
-        setTimeout(() => openDealPaidScreen(currentDeal), 500);
+        setTimeout(() => openBuyerWaitingScreen(currentDeal), 500);
     }
 }
+
 function confirmCryptoPayment() { 
     showMessage('Отправлено', 'Ожидайте проверки 2-5 минут');
     if (currentDeal) {
         updateDealStatus(currentDeal.id, 'paid');
-        setTimeout(() => openDealPaidScreen(currentDeal), 500);
+        setTimeout(() => openBuyerWaitingScreen(currentDeal), 500);
     }
 }
 
 // ======================================================
-// ЭКРАН "СДЕЛКА ОПЛАЧЕНА"
+// ЭКРАН "СДЕЛКА ОПЛАЧЕНА" (ДЛЯ ПРОДАВЦА)
 // ======================================================
 
 function openDealPaidScreen(deal) {
@@ -288,11 +292,30 @@ function openDealPaidScreen(deal) {
     
     console.log('ОТКРЫВАЕМ ЭКРАН ОПЛАЧЕНО:', deal);
     
+    const formattedAmount = formatAmount(deal.amount, deal.currency);
     if (document.getElementById('paidDealId')) document.getElementById('paidDealId').textContent = deal.id;
-    if (document.getElementById('paidDealAmount')) document.getElementById('paidDealAmount').textContent = formatAmount(deal.amount, deal.currency);
-    if (document.getElementById('paidDealName')) document.getElementById('paidDealName').textContent = deal.name;
+    if (document.getElementById('paidDealAmount')) document.getElementById('paidDealAmount').textContent = formattedAmount;
+    if (document.getElementById('paidBuyerName')) document.getElementById('paidBuyerName').textContent = deal.buyerUsername || 'Покупатель';
     
     showScreenById('dealPaidScreen');
+}
+
+// ======================================================
+// ЭКРАН "ОЖИДАНИЕ NFT" (ДЛЯ ПОКУПАТЕЛЯ)
+// ======================================================
+
+function openBuyerWaitingScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    console.log('ОТКРЫВАЕМ ЭКРАН ОЖИДАНИЯ NFT:', deal);
+    
+    const formattedAmount = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('waitingDealId')) document.getElementById('waitingDealId').textContent = deal.id;
+    if (document.getElementById('waitingDealAmount')) document.getElementById('waitingDealAmount').textContent = formattedAmount;
+    if (document.getElementById('waitingSellerName')) document.getElementById('waitingSellerName').textContent = deal.sellerUsername || 'Продавец';
+    
+    showScreenById('buyerWaitingScreen');
 }
 
 // ======================================================
@@ -305,11 +328,57 @@ function openBuyerConfirmedScreen(deal) {
     
     console.log('ОТКРЫВАЕМ ЭКРАН ПОДТВЕРЖДЕНИЯ:', deal);
     
+    const formattedAmount = formatAmount(deal.amount, deal.currency);
     if (document.getElementById('confirmedDealId')) document.getElementById('confirmedDealId').textContent = deal.id;
-    if (document.getElementById('confirmedDealAmount')) document.getElementById('confirmedDealAmount').textContent = formatAmount(deal.amount, deal.currency);
-    if (document.getElementById('confirmedDealName')) document.getElementById('confirmedDealName').textContent = deal.name;
+    if (document.getElementById('confirmedDealAmount')) document.getElementById('confirmedDealAmount').textContent = formattedAmount;
+    if (document.getElementById('confirmedBuyerName')) document.getElementById('confirmedBuyerName').textContent = deal.buyerUsername || 'Покупатель';
     
     showScreenById('buyerConfirmedScreen');
+}
+
+// ======================================================
+// ПРОВЕРКА СТАТУСА ОПЛАТЫ (ДЛЯ ПРОДАВЦА)
+// ======================================================
+
+function checkPaymentStatus() {
+    if (!currentDeal) {
+        showMessage('Ошибка', 'Сделка не найдена');
+        return;
+    }
+    
+    // Ищем обновлённую сделку в localStorage
+    const updatedDeal = deals.find(d => d.id === currentDeal.id);
+    
+    if (updatedDeal && updatedDeal.status === 'paid') {
+        showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку. Переходим к подтверждению.');
+        // Обновляем currentDeal
+        currentDeal = updatedDeal;
+        // Открываем экран для продавца
+        openDealPaidScreen(currentDeal);
+    } else {
+        showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
+    }
+}
+
+// ======================================================
+// ОБНОВЛЕНИЕ СТАТУСА ИЗ ВНЕШНЕГО ИСТОЧНИКА
+// ======================================================
+
+function externalPaymentConfirmed(dealId, buyerUsername) {
+    const index = deals.findIndex(d => d.id === dealId);
+    if (index !== -1 && deals[index].status !== 'paid') {
+        deals[index].status = 'paid';
+        deals[index].buyerUsername = buyerUsername;
+        saveDeals();
+        renderHistoryList();
+        
+        // Если это текущая сделка продавца - обновляем экран
+        if (currentDeal && currentDeal.id === dealId && currentDeal.sellerId === currentUser.id) {
+            currentDeal = deals[index];
+            openDealPaidScreen(currentDeal);
+            showMessage('Оплата получена!', 'Покупатель оплатил сделку. Можете отправлять NFT.');
+        }
+    }
 }
 
 // ======================================================
@@ -385,7 +454,13 @@ function handleStartParam(startParam) {
             let deal = decodeDealData(encodedData);
             if (deal) {
                 console.log('Данные успешно декодированы!');
-                if (!deals.find(d => d.id === deal.id)) { deals.push(deal); saveDeals(); }
+                if (!deals.find(d => d.id === deal.id)) { 
+                    deals.push(deal); 
+                    saveDeals(); 
+                }
+                // Запоминаем покупателя
+                currentBuyerUsername = currentUser.username ? `@${currentUser.username}` : `user_${currentUser.id}`;
+                deal.buyerUsername = currentBuyerUsername;
                 setTimeout(() => { openPaymentScreen(deal); }, 100);
                 return;
             } else {
@@ -457,6 +532,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let backPay = document.getElementById('backToDealFromPayment');
     if (backPay) backPay.onclick = () => showScreenById('mainScreen');
     
+    // Кнопка проверки оплаты (для продавца)
+    let checkPaymentBtn = document.getElementById('checkPaymentStatusBtn');
+    if (checkPaymentBtn) checkPaymentBtn.onclick = checkPaymentStatus;
+    
     // Кнопка "Я получил(а) подарок" на экране оплаты продавца
     let confirmGoodsBtn = document.getElementById('confirmGoodsReceivedBtn');
     if (confirmGoodsBtn) {
@@ -465,6 +544,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Ваше подтверждение отправлено администратору.\n\n' +
                 'Ожидайте проверки. Средства поступят на ваш счёт в течение 5-10 минут после подтверждения.\n\n' +
                 'При проблемах пишите @huntsboss');
+            if (currentDeal) {
+                updateDealStatus(currentDeal.id, 'completed');
+                setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
+            }
+        };
+    }
+    
+    // Кнопка "Я получил(а) подарок" для покупателя на экране ожидания NFT
+    let confirmGoodsBuyerBtn = document.getElementById('confirmGoodsReceivedBuyerBtn');
+    if (confirmGoodsBuyerBtn) {
+        confirmGoodsBuyerBtn.onclick = () => {
+            showMessage('Отправлено на проверку', 
+                'Ваше подтверждение отправлено администратору.\n\nСредства будут переведены продавцу.\n\nПри проблемах пишите @huntsboss');
             if (currentDeal) {
                 updateDealStatus(currentDeal.id, 'completed');
                 setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
