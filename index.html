@@ -539,7 +539,7 @@
             <strong>Как это работает:</strong>
             <ul>
                 <li>Вы создаёте сделку как продавец</li>
-                <li>Покупатель присоединяется по ID сделки</li>
+                <li>Покупатель присоединяется по ссылке</li>
                 <li>Покупатель оплачивает — деньги в безопасности</li>
                 <li>Админ подтверждает оплату</li>
                 <li>Вы отправляете товар/услугу</li>
@@ -914,7 +914,7 @@
             </div>
             <div class="deal-id-display">
                 <span class="deal-id-code" id="dealIdValue">—</span>
-                <button id="copyDealIdBtn" class="btn" style="width: auto; padding: 10px 16px;">📋 Копировать</button>
+                <button id="copyDealIdBtn" class="btn" style="width: auto; padding: 10px 16px;"> Копировать</button>
             </div>
             <div class="hint-text">отправьте ID сделки покупателю чтобы присоединиться к сделке</div>
         </div>
@@ -1056,6 +1056,100 @@
         </div>
     </div>
 
+    <!-- ЭКРАН "СДЕЛКА ОПЛАЧЕНА" -->
+    <div id="dealPaidScreen" class="hidden">
+        <div class="card" style="text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.9357 19.9023L17.6956 20.2661C18.4944 20.6485 19.4187 20.0657 19.4177 19.1793L19.408 6.92492C19.408 4.50225 18.0604 3 15.6417 3H8.34252C5.91791 3 4.59955 4.50225 4.59955 6.92492L4.58203 19.1774C4.58106 20.0638 5.50537 20.6475 6.30514 20.2642L7.05919 19.9032C7.51259 19.6853 8.03701 19.6697 8.50306 19.8604L10.6494 20.7351C11.5144 21.0883 12.4844 21.0883 13.3494 20.7351L15.4918 19.8604C15.9579 19.6697 16.4823 19.6853 16.9357 19.9023Z" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.25586 14.4531H14.3639" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.66602 9.83875L11.2082 11.3809L14.3644 8.22461" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 style="color: #22c55e; margin-bottom: 8px;">Сделка оплачена!</h2>
+            <p style="color: #8a8f9e; margin-bottom: 24px;">Поступила оплата от покупателя</p>
+
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;"> ID сделки:</span>
+                    <span id="paidDealId" style="font-family: monospace; font-weight: 500;">—</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;"> Сумма:</span>
+                    <span id="paidDealAmount" style="font-weight: 700; color: #22c55e;">—</span>
+                </div>
+                <div class="flex-between">
+                    <span style="color: #8a8f9e;"> Название:</span>
+                    <span id="paidDealName" style="font-weight: 500;">—</span>
+                </div>
+            </div>
+
+            <div style="background: #15171e; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: left;">
+                <p style="margin-bottom: 12px;"> После отправки NFT деньги поступят автоматически</p>
+                <p style="margin-bottom: 12px;"> Можете отправлять NFT покупателю</p>
+                <p style="margin-bottom: 12px;"> Обычно проверка занимает до 30 минут</p>
+                <p style="color: #f59e0b; margin-bottom: 12px;"> Не отправляйте скриншоты покупателю - только в поддержку!</p>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #15171e; border-radius: 12px;">
+                <p style="font-size: 13px; color: #8a8f9e;"> Гарант: Trust Zipper</p>
+                <p style="font-size: 13px; color: #8a8f9e;"> Поддержка: @huntsboss</p>
+            </div>
+
+            <button id="confirmGoodsReceivedBtn" class="btn" style="background: #a855f7;">📦 Я получил(а) подарок</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН "ПОКУПАТЕЛЬ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ" -->
+    <div id="buyerConfirmedScreen" class="hidden">
+        <div class="card" style="text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.87353 17.401C9.75504 18.2241 12.3558 16.8697 14.6832 14.377C17.0095 11.8842 18.182 9.19686 17.3005 8.37372C16.419 7.55058 13.8172 8.90497 11.4908 11.3977C9.16347 13.8905 7.99201 16.5779 8.87353 17.401Z" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3.20898 6.875H3.23234M5.91032 17.1323H5.93367" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M17.453 8.57031L20.9664 19.6039C21.1299 20.1195 20.6609 20.6138 20.1364 20.4766L9.20312 17.5995" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M15.3633 19.2191C16.0872 18.6976 16.8403 18.0223 17.5642 17.2508C18.326 16.4296 18.9633 15.5899 19.4459 14.8086" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6.44725 14.081C6.44725 14.081 4.59568 13.938 3 15.6621" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M9.57231 5.97024C9.57231 6.62505 9.04107 7.1563 8.38626 7.1563C7.73144 7.1563 7.20117 6.62505 7.20117 5.97024C7.20117 5.31543 7.73144 4.78516 8.38626 4.78516C9.04107 4.78516 9.57231 5.31543 9.57231 5.97024Z" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12.7314 12.6807C12.7314 12.6807 9.48558 9.33172 4.51367 10.7474" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13.8508 3.5C13.8508 3.5 11.9711 6.07352 14.0532 9.16758" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 style="color: #22c55e; margin-bottom: 8px;">Покупатель подтвердил получение NFT!</h2>
+            <p style="color: #8a8f9e; margin-bottom: 24px;">Средства будут зачислены на ваш счёт</p>
+
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;"> ID сделки:</span>
+                    <span id="confirmedDealId" style="font-family: monospace; font-weight: 500;">—</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;"> Сумма:</span>
+                    <span id="confirmedDealAmount" style="font-weight: 700; color: #22c55e;">—</span>
+                </div>
+                <div class="flex-between">
+                    <span style="color: #8a8f9e;"> Название:</span>
+                    <span id="confirmedDealName" style="font-weight: 500;">—</span>
+                </div>
+            </div>
+
+            <div style="background: #15171e; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: left;">
+                <p style="margin-bottom: 12px;"> Средства будут зачислены на ваш счет в течение 5-10 минут</p>
+                <p style="margin-bottom: 12px;"> После подтверждения поддержкой вы получите уведомление</p>
+                <p style="margin-bottom: 12px;"> Обычно проверка занимает до 15 минут</p>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #15171e; border-radius: 12px;">
+                <p style="font-size: 13px; color: #8a8f9e;"> Гарант: Trust Zipper</p>
+                <p style="font-size: 13px; color: #8a8f9e;"> Поддержка: @huntsboss</p>
+            </div>
+
+            <button id="backToMainFromConfirmedBtn" class="btn btn-secondary mt-3">На главную</button>
+        </div>
+    </div>
+
     <!-- ФИНАЛЬНЫЙ ЭКРАН -->
     <div id="successScreen" class="hidden">
         <div class="success-screen">
@@ -1074,6 +1168,7 @@
 
 let tg = null;
 let currentUser = null;
+let dealProgress = 0;
 
 try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -1128,6 +1223,15 @@ try { const saved = localStorage.getItem('trustzipper_deals'); if (saved) deals 
 
 function saveWallets() { try { localStorage.setItem('trustzipper_wallets', JSON.stringify(wallets)); } catch(e) {} }
 function saveDeals() { try { localStorage.setItem('trustzipper_deals', JSON.stringify(deals)); } catch(e) {} }
+
+function updateDealStatus(dealId, status) {
+    const index = deals.findIndex(d => d.id === dealId);
+    if (index !== -1) {
+        deals[index].status = status;
+        saveDeals();
+        renderHistoryList();
+    }
+}
 
 // ========== КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ ==========
 function encodeDealData(deal) {
@@ -1243,7 +1347,7 @@ function updateReferralLink() {
 
 function showScreenById(screenId) {
     if (currentScreen === screenId) return;
-    const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'paymentScreen', 'successScreen'];
+    const allScreens = ['mainScreen', 'joinDealScreen', 'infoScreen', 'supportScreen', 'referralScreen', 'walletScreen', 'addCardScreen', 'selectCryptoScreen', 'addCryptoScreen', 'addTonScreen', 'listWalletsScreen', 'historyScreen', 'createDealScreen', 'dealProgressScreen', 'dealCreatedScreen', 'paymentScreen', 'dealPaidScreen', 'buyerConfirmedScreen', 'successScreen'];
     allScreens.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('hidden'); });
     let target = document.getElementById(screenId);
     if (target) target.classList.remove('hidden');
@@ -1286,8 +1390,49 @@ function togglePaymentOptions() {
 
 function copyCardNumber() { let num = document.getElementById('cardNumberDisplay')?.textContent; if (num) safeCopy(num); }
 function copyWalletAddress() { let addr = document.getElementById('walletAddress')?.textContent; if (addr) safeCopy(addr); }
-function confirmCardPayment() { showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты'); }
-function confirmCryptoPayment() { showMessage('Отправлено', 'Ожидайте проверки 2-5 минут'); }
+function confirmCardPayment() { 
+    showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты');
+    // После подтверждения оплаты показываем экран "Сделка оплачена"
+    if (currentDeal) {
+        updateDealStatus(currentDeal.id, 'paid');
+        setTimeout(() => openDealPaidScreen(currentDeal), 500);
+    }
+}
+function confirmCryptoPayment() { 
+    showMessage('Отправлено', 'Ожидайте проверки 2-5 минут');
+    if (currentDeal) {
+        updateDealStatus(currentDeal.id, 'paid');
+        setTimeout(() => openDealPaidScreen(currentDeal), 500);
+    }
+}
+
+// ========== ЭКРАН "СДЕЛКА ОПЛАЧЕНА" ==========
+function openDealPaidScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    console.log('ОТКРЫВАЕМ ЭКРАН ОПЛАЧЕНО:', deal);
+    
+    if (document.getElementById('paidDealId')) document.getElementById('paidDealId').textContent = deal.id;
+    if (document.getElementById('paidDealAmount')) document.getElementById('paidDealAmount').textContent = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('paidDealName')) document.getElementById('paidDealName').textContent = deal.name;
+    
+    showScreenById('dealPaidScreen');
+}
+
+// ========== ЭКРАН "ПОКУПАТЕЛЬ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ" ==========
+function openBuyerConfirmedScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    console.log('ОТКРЫВАЕМ ЭКРАН ПОДТВЕРЖДЕНИЯ:', deal);
+    
+    if (document.getElementById('confirmedDealId')) document.getElementById('confirmedDealId').textContent = deal.id;
+    if (document.getElementById('confirmedDealAmount')) document.getElementById('confirmedDealAmount').textContent = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('confirmedDealName')) document.getElementById('confirmedDealName').textContent = deal.name;
+    
+    showScreenById('buyerConfirmedScreen');
+}
 
 function createDeal() {
     let name = document.getElementById('dealName')?.value.trim();
@@ -1389,6 +1534,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('confirmCardPaymentBtn').onclick = confirmCardPayment;
     document.getElementById('confirmCryptoPaymentBtn').onclick = confirmCryptoPayment;
     document.getElementById('backToDealFromPayment').onclick = () => showScreenById('mainScreen');
+    
+    // Кнопка "Я получил(а) подарок" на экране "Сделка оплачена"
+    let confirmGoodsBtn = document.getElementById('confirmGoodsReceivedBtn');
+    if (confirmGoodsBtn) {
+        confirmGoodsBtn.onclick = () => {
+            showMessage('Отправлено на проверку', 
+                'Ваше подтверждение отправлено администратору.\n\n' +
+                'Ожидайте проверки. Средства поступят на ваш счёт в течение 5-10 минут после подтверждения.\n\n' +
+                'При проблемах пишите @huntsboss');
+            if (currentDeal) {
+                updateDealStatus(currentDeal.id, 'completed');
+                setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
+            }
+        };
+    }
+    
+    // Кнопка "На главную" на экране подтверждения
+    let backToMainFromConfirmed = document.getElementById('backToMainFromConfirmedBtn');
+    if (backToMainFromConfirmed) backToMainFromConfirmed.onclick = () => showScreenById('mainScreen');
 
     let backButtons = {
         'backToMainFromJoin': 'mainScreen', 'backToMainFromInfo': 'mainScreen', 'backToMainFromSupport': 'mainScreen',
@@ -1396,7 +1560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'backToMainFromDealCreated': 'mainScreen', 'backToMainFromDealCreatedBtn': 'mainScreen', 'cancelCreateBtn': 'mainScreen',
         'backToMainFromWallet': 'mainScreen', 'backToMainFromHistory': 'mainScreen', 'backToMainFromReferral': 'mainScreen',
         'backToWalletFromCard': 'walletScreen', 'backToWalletFromCrypto': 'walletScreen', 'backToWalletFromTon': 'walletScreen',
-        'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen'
+        'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen', 'backToMainFromConfirmedBtn': 'mainScreen'
     };
     for (let [id, screen] of Object.entries(backButtons)) { let el = document.getElementById(id); if (el) el.onclick = () => showScreenById(screen); }
 
