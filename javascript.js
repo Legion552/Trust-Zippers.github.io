@@ -5,6 +5,7 @@
 let tg = null;
 let currentUser = null;
 let dealProgress = 0;
+let isCheckingPayment = false; // Блокировка повторных вызовов
 
 try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -257,19 +258,37 @@ function confirmCryptoPayment() {
     }
 }
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ - с блокировкой повторных вызовов
 function checkPaymentStatus() {
+    // Блокируем повторные вызовы
+    if (isCheckingPayment) {
+        console.log('Проверка оплаты уже выполняется, пропускаем');
+        return;
+    }
+    
     if (!currentDeal) {
         showMessage('Ошибка', 'Сделка не найдена');
         return;
     }
+    
+    isCheckingPayment = true;
+    console.log('Проверяем статус оплаты для сделки:', currentDeal.id);
+    
     const updatedDeal = deals.find(d => d.id === currentDeal.id);
+    
     if (updatedDeal && updatedDeal.status === 'paid') {
         showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку.');
         currentDeal = updatedDeal;
-        // Закрываем текущий экран и открываем экран оплаты продавца
-        openDealPaidScreen(currentDeal);
+        // Сначала сбрасываем блокировку, потом переходим на другой экран
+        setTimeout(() => {
+            isCheckingPayment = false;
+            openDealPaidScreen(currentDeal);
+        }, 100);
     } else {
         showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
+        setTimeout(() => {
+            isCheckingPayment = false;
+        }, 500);
     }
 }
 
@@ -306,14 +325,12 @@ function openBuyerConfirmedScreen(deal) {
     showScreenById('buyerConfirmedScreen');
 }
 
-// Функция для продавца - подтверждение отправки NFT
 function confirmNftSent() {
     if (!currentDeal) {
         showMessage('Ошибка', 'Сделка не найдена');
         return;
     }
     showMessage('Отправлено', 'Уведомление отправлено покупателю. Ожидайте подтверждения получения.');
-    // Здесь можно отправить уведомление в бот
     sendToBot('nft_sent', {
         deal_id: currentDeal.id,
         seller_id: currentUser.id
@@ -406,7 +423,6 @@ function renderShieldIcon() {
     if (c) c.innerHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none"><path d="M4.31245 12.879C4.31245 19.283 11.9845 21.606 11.9845 21.606C11.9845 21.606 19.6565 19.283 19.6565 12.879C19.6565 6.474 19.9345 5.974 19.3195 5.358C18.7035 4.742 12.9905 2.75 11.9845 2.75C10.9785 2.75 5.26545 4.742 4.65045 5.358C4.13767 5.87079 4.2445 5.17473 4.29467 9" stroke="#22c55e" stroke-width="1.5"/><path d="M9.38574 11.8746L11.2777 13.7696L15.1757 9.8696" stroke="#22c55e" stroke-width="1.5"/></svg>`; 
 }
 
-// Функция для получения подтверждения получения NFT от покупателя
 function confirmGiftReceived() {
     if (!currentDeal) {
         showMessage('Ошибка', 'Сделка не найдена');
@@ -459,31 +475,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let checkPaymentBtn = document.getElementById('checkPaymentStatusBtn');
     if (checkPaymentBtn) checkPaymentBtn.onclick = checkPaymentStatus;
     
-    // Кнопка "Я отправил NFT" для продавца (на экране dealPaidScreen)
+    // Кнопка "Я отправил NFT" для продавца
     let confirmNftSentBtn = document.getElementById('confirmNftSentBtn');
     if (confirmNftSentBtn) {
         confirmNftSentBtn.onclick = confirmNftSent;
-    } else {
-        // Если кнопки нет в HTML, добавляем её в dealPaidScreen
-        const dealPaidCard = document.querySelector('#dealPaidScreen .card');
-        if (dealPaidCard && !document.getElementById('confirmNftSentBtn')) {
-            const nftBtn = document.createElement('button');
-            nftBtn.id = 'confirmNftSentBtn';
-            nftBtn.textContent = 'Я отправил NFT';
-            nftBtn.className = 'btn mt-3';
-            nftBtn.style.background = '#a855f7';
-            nftBtn.onclick = confirmNftSent;
-            // Вставляем перед кнопкой "На главную"
-            const backBtn = document.getElementById('backToMainFromDealPaid');
-            if (backBtn) {
-                dealPaidCard.insertBefore(nftBtn, backBtn);
-            } else {
-                dealPaidCard.appendChild(nftBtn);
-            }
-        }
     }
     
-    // Кнопка "Я получил(а) подарок" для покупателя (на экране ожидания NFT)
+    // Кнопка "Я получил(а) подарок" для покупателя
     let confirmGoodsBuyerBtn = document.getElementById('confirmGoodsReceivedBuyerBtn');
     if (confirmGoodsBuyerBtn) {
         confirmGoodsBuyerBtn.onclick = confirmGiftReceived;
@@ -493,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let backToMainFromConfirmed = document.getElementById('backToMainFromConfirmedBtn');
     if (backToMainFromConfirmed) backToMainFromConfirmed.onclick = () => showScreenById('mainScreen');
     
-    // Кнопка "На главную" на экране оплаты продавца (dealPaidScreen)
+    // Кнопка "На главную" на экране оплаты продавца
     let backToMainFromDealPaidBtn = document.getElementById('backToMainFromDealPaid');
     if (backToMainFromDealPaidBtn) backToMainFromDealPaidBtn.onclick = () => showScreenById('mainScreen');
 
