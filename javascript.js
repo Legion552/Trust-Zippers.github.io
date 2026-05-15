@@ -1,3 +1,9 @@
+'backToMainFromDealPaid'; 'mainScreen'
+
+// Кнопка "На главную" на экране оплаты продавца
+let backToMainFromDealPaid = document.getElementById('backToMainFromDealPaid');
+if (backToMainFromDealPaid) backToMainFromDealPaid.onclick = () => showScreenById('mainScreen');
+
 // ======================================================
 // ПРОСТАЯ И НАДЁЖНАЯ СИСТЕМА (ДАННЫЕ В ССЫЛКЕ)
 // ======================================================
@@ -681,6 +687,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let backToMainFromConfirmed = document.getElementById('backToMainFromConfirmedBtn');
     if (backToMainFromConfirmed) backToMainFromConfirmed.onclick = () => showScreenById('mainScreen');
 
+    // Кнопка "На главную" на экране оплаты продавца (dealPaidScreen)
+    let backToMainFromDealPaidBtn = document.getElementById('backToMainFromDealPaid');
+    if (backToMainFromDealPaidBtn) backToMainFromDealPaidBtn.onclick = () => showScreenById('mainScreen');
+
     // Кнопки назад
     let backButtons = {
         'backToMainFromJoin': 'mainScreen', 'backToMainFromInfo': 'mainScreen', 'backToMainFromSupport': 'mainScreen',
@@ -688,7 +698,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'backToMainFromDealCreated': 'mainScreen', 'backToMainFromDealCreatedBtn': 'mainScreen', 'cancelCreateBtn': 'mainScreen',
         'backToMainFromWallet': 'mainScreen', 'backToMainFromHistory': 'mainScreen', 'backToMainFromReferral': 'mainScreen',
         'backToWalletFromCard': 'walletScreen', 'backToWalletFromCrypto': 'walletScreen', 'backToWalletFromTon': 'walletScreen',
-        'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen', 'backToMainFromConfirmedBtn': 'mainScreen'
+        'backToWalletFromList': 'walletScreen', 'backToCryptoSelect': 'selectCryptoScreen', 'backToMainFromConfirmedBtn': 'mainScreen',
+        'backToMainFromDealPaid': 'mainScreen'
     };
     for (let [id, screen] of Object.entries(backButtons)) { let el = document.getElementById(id); if (el) el.onclick = () => showScreenById(screen); }
 
