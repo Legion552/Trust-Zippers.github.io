@@ -47,6 +47,22 @@ function getStartParam() {
 }
 
 // ======================================================
+// ОТПРАВКА ДАННЫХ В БОТ
+// ======================================================
+
+function sendToBot(action, data) {
+    if (tg && tg.sendData) {
+        try {
+            const payload = { action, ...data };
+            tg.sendData(JSON.stringify(payload));
+            console.log('Отправлено в бот:', payload);
+        } catch(e) {
+            console.error('Ошибка отправки в бот:', e);
+        }
+    }
+}
+
+// ======================================================
 // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ======================================================
 
@@ -266,10 +282,22 @@ function togglePaymentOptions() {
 function copyCardNumber() { let num = document.getElementById('cardNumberDisplay')?.textContent; if (num) safeCopy(num); }
 function copyWalletAddress() { let addr = document.getElementById('walletAddress')?.textContent; if (addr) safeCopy(addr); }
 
+// ========== ОТПРАВЛЯЕМ ПОДТВЕРЖДЕНИЕ ОПЛАТЫ В БОТ ==========
 function confirmCardPayment() { 
     showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты');
     if (currentDeal) {
         updateDealStatus(currentDeal.id, 'paid');
+        
+        // ОТПРАВЛЯЕМ В БОТ
+        sendToBot('payment_confirmed', {
+            deal_id: currentDeal.id,
+            buyer_id: currentUser.id,
+            buyer_username: currentUser.username || `id${currentUser.id}`,
+            amount: currentDeal.amount,
+            currency: currentDeal.currency,
+            deal_name: currentDeal.name
+        });
+        
         setTimeout(() => openBuyerWaitingScreen(currentDeal), 500);
     }
 }
@@ -278,6 +306,17 @@ function confirmCryptoPayment() {
     showMessage('Отправлено', 'Ожидайте проверки 2-5 минут');
     if (currentDeal) {
         updateDealStatus(currentDeal.id, 'paid');
+        
+        // ОТПРАВЛЯЕМ В БОТ
+        sendToBot('payment_confirmed', {
+            deal_id: currentDeal.id,
+            buyer_id: currentUser.id,
+            buyer_username: currentUser.username || `id${currentUser.id}`,
+            amount: currentDeal.amount,
+            currency: currentDeal.currency,
+            deal_name: currentDeal.name
+        });
+        
         setTimeout(() => openBuyerWaitingScreen(currentDeal), 500);
     }
 }
@@ -346,14 +385,11 @@ function checkPaymentStatus() {
         return;
     }
     
-    // Ищем обновлённую сделку в localStorage
     const updatedDeal = deals.find(d => d.id === currentDeal.id);
     
     if (updatedDeal && updatedDeal.status === 'paid') {
         showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку. Переходим к подтверждению.');
-        // Обновляем currentDeal
         currentDeal = updatedDeal;
-        // Открываем экран для продавца
         openDealPaidScreen(currentDeal);
     } else {
         showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
@@ -372,13 +408,55 @@ function externalPaymentConfirmed(dealId, buyerUsername) {
         saveDeals();
         renderHistoryList();
         
-        // Если это текущая сделка продавца - обновляем экран
         if (currentDeal && currentDeal.id === dealId && currentDeal.sellerId === currentUser.id) {
             currentDeal = deals[index];
             openDealPaidScreen(currentDeal);
             showMessage('Оплата получена!', 'Покупатель оплатил сделку. Можете отправлять NFT.');
         }
     }
+}
+
+// ======================================================
+// ПОДТВЕРЖДЕНИЕ ОТПРАВКИ NFT (ДЛЯ ПРОДАВЦА)
+// ======================================================
+
+function confirmNftSent() {
+    if (!currentDeal) {
+        showMessage('Ошибка', 'Сделка не найдена');
+        return;
+    }
+    
+    showMessage('Отправлено', 'Уведомление отправлено покупателю.');
+    
+    sendToBot('nft_sent', {
+        deal_id: currentDeal.id,
+        seller_id: currentUser.id
+    });
+}
+
+// ======================================================
+// ПОДТВЕРЖДЕНИЕ ПОЛУЧЕНИЯ NFT (ДЛЯ ПОКУПАТЕЛЯ)
+// ======================================================
+
+function confirmGiftReceived() {
+    if (!currentDeal) {
+        showMessage('Ошибка', 'Сделка не найдена');
+        return;
+    }
+    
+    showMessage('Отправлено на проверку', 'Ваше подтверждение отправлено администратору.');
+    
+    sendToBot('gift_confirmed', {
+        deal_id: currentDeal.id,
+        buyer_id: currentUser.id,
+        buyer_username: currentUser.username || `id${currentUser.id}`,
+        amount: currentDeal.amount,
+        currency: currentDeal.currency,
+        deal_name: currentDeal.name
+    });
+    
+    updateDealStatus(currentDeal.id, 'completed');
+    setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
 }
 
 // ======================================================
@@ -458,7 +536,6 @@ function handleStartParam(startParam) {
                     deals.push(deal); 
                     saveDeals(); 
                 }
-                // Запоминаем покупателя
                 currentBuyerUsername = currentUser.username ? `@${currentUser.username}` : `user_${currentUser.id}`;
                 deal.buyerUsername = currentBuyerUsername;
                 setTimeout(() => { openPaymentScreen(deal); }, 100);
@@ -480,8 +557,47 @@ function handleStartParam(startParam) {
         }
     }
     
-    // Если ничего не подошло - главный экран
+    // ФОРМАТ ДЛЯ ПРОДАВЦА (подтверждение оплаты)
+    if (startParam.startsWith('confirm_DATA_')) {
+        let encodedData = startParam.replace('confirm_DATA_', '');
+        try {
+            let decoded = atob(encodedData);
+            let dealData = JSON.parse(decoded);
+            console.log('Данные для продавца:', dealData);
+            // Здесь можно открыть экран подтверждения для продавца
+            showMessage('Подтверждение оплаты', 'Вы можете подтвердить отправку NFT через бота.');
+        } catch(e) {
+            console.error('Ошибка декодирования confirm_DATA:', e);
+        }
+        showScreenById('mainScreen');
+        return;
+    }
+    
     showScreenById('mainScreen');
+}
+
+// ======================================================
+// ОБРАБОТКА ДАННЫХ ОТ БОТА
+// ======================================================
+
+function handleBotData(data) {
+    console.log('Получены данные от бота:', data);
+    
+    if (data.action === 'payment_confirmed') {
+        externalPaymentConfirmed(data.deal_id, data.buyer_username);
+    }
+}
+
+// Настройка получения данных от бота
+if (tg && tg.onEvent) {
+    tg.onEvent('web_app_data_sent', (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            handleBotData(data);
+        } catch(e) {
+            console.error('Ошибка обработки данных от бота:', e);
+        }
+    });
 }
 
 // ======================================================
@@ -536,7 +652,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let checkPaymentBtn = document.getElementById('checkPaymentStatusBtn');
     if (checkPaymentBtn) checkPaymentBtn.onclick = checkPaymentStatus;
     
-    // Кнопка "Я получил(а) подарок" на экране оплаты продавца
+    // Кнопка "Я отправил NFT" для продавца
+    let confirmNftSentBtn = document.getElementById('confirmNftSentBtn');
+    if (confirmNftSentBtn) confirmNftSentBtn.onclick = confirmNftSent;
+    
+    // Кнопка "Я получил(а) подарок" для продавца (на экране оплаты продавца)
     let confirmGoodsBtn = document.getElementById('confirmGoodsReceivedBtn');
     if (confirmGoodsBtn) {
         confirmGoodsBtn.onclick = () => {
@@ -551,17 +671,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    // Кнопка "Я получил(а) подарок" для покупателя на экране ожидания NFT
+    // Кнопка "Я получил(а) подарок" для покупателя (на экране ожидания NFT)
     let confirmGoodsBuyerBtn = document.getElementById('confirmGoodsReceivedBuyerBtn');
     if (confirmGoodsBuyerBtn) {
-        confirmGoodsBuyerBtn.onclick = () => {
-            showMessage('Отправлено на проверку', 
-                'Ваше подтверждение отправлено администратору.\n\nСредства будут переведены продавцу.\n\nПри проблемах пишите @huntsboss');
-            if (currentDeal) {
-                updateDealStatus(currentDeal.id, 'completed');
-                setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
-            }
-        };
+        confirmGoodsBuyerBtn.onclick = confirmGiftReceived;
     }
     
     // Кнопка "На главную" на экране подтверждения
