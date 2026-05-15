@@ -1,14 +1,1071 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Trust Zipper</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0c10;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 16px 0;
+        }
+
+        .logo-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #a855f7, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .card {
+            background: #15171e;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #2a2e3a;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .btn {
+            background: #a855f7;
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #252a35;
+            color: #ffffff;
+            border: 1px solid #3a3f4a;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8a8f9e;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px;
+            background: #0a0c10;
+            border: 1px solid #2a2e3a;
+            border-radius: 14px;
+            color: #ffffff;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #a855f7;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #0a0c10;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .radio-option.selected {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+
+        .radio-option input {
+            width: 18px;
+            height: 18px;
+            accent-color: #a855f7;
+        }
+
+        .radio-option-content {
+            flex: 1;
+        }
+
+        .radio-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-desc {
+            font-size: 12px;
+            color: #8a8f9e;
+        }
+
+        .currency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .currency-item {
+            background: #0a0c10;
+            border: 1px solid #2a2e3a;
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .currency-item.selected {
+            background: #a855f7;
+            border-color: #a855f7;
+        }
+
+        .progress-steps {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .step {
+            display: flex;
+            flex: 1;
+            min-width: 120px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            background: #252a35;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .step-icon.active {
+            background: #a855f7;
+        }
+
+        .step-icon.completed {
+            background: #22c55e;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .step-desc {
+            font-size: 10px;
+            color: #8a8f9e;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mt-3 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; }
+        .text-center { text-align: center; }
+
+        .success-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+        }
+
+        .success-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .success-text {
+            color: #8a8f9e;
+            margin-bottom: 32px;
+        }
+
+        .deal-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #a855f7;
+        }
+
+        .info-text, .support-text {
+            line-height: 1.6;
+        }
+        .info-text h4, .support-text h4 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: #a855f7;
+        }
+        .info-text ul, .support-text ul {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+        .info-text li, .support-text li {
+            margin-bottom: 6px;
+        }
+        .support-link {
+            color: #a855f7;
+            text-decoration: none;
+        }
+
+        .wallet-item {
+            background: #0a0c10;
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #2a2e3a;
+        }
+        .wallet-type {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #a855f7;
+        }
+        .wallet-address {
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            color: #8a8f9e;
+        }
+        .delete-wallet {
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .deal-history-item {
+            background: #0a0c10;
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #a855f7;
+        }
+        .deal-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .status-completed {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+        .status-waiting {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+        .status-paid {
+            background: #a855f720;
+            color: #a855f7;
+        }
+
+        .deal-id-display {
+            background: #0a0c10;
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px solid #2a2e3a;
+        }
+        .deal-id-code {
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 600;
+            color: #a855f7;
+        }
+        .hint-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+            text-align: center;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 12px; padding-bottom: 60px; }
+            .card { padding: 16px; }
+            .currency-grid { grid-template-columns: repeat(2, 1fr); }
+            .btn { padding: 12px 16px; }
+            .progress-steps { flex-direction: column; }
+            .step { min-width: auto; }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #15171e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2e3a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a855f7;
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <!-- ГЛАВНЫЙ ЭКРАН -->
+    <div id="mainScreen">
+        <div class="header">
+            <div class="logo-icon" id="giftIcon"></div>
+            <div class="logo-text">
+                <h1>Trust Zipper</h1>
+                <div class="logo-sub">Безопасные P2P-сделки</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Безопасные сделки</span>
+            </div>
+            <button class="btn" id="createDealBtn">Создать сделку</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Сервисы</span>
+            </div>
+            <div class="radio-group" style="gap: 8px;">
+                <div class="radio-option" data-action="info">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Информация</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-action="support">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Поддержка</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Мои данные</span>
+            </div>
+            <div class="radio-group" style="gap: 8px;">
+                <div class="radio-option" data-action="history">
+                    <div class="radio-option-content">
+                        <div class="radio-title">История моих сделок</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-action="wallet">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Настроить кошелек</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Дополнительно</span>
+            </div>
+            <div class="radio-option" data-action="referral">
+                <div class="radio-option-content">
+                    <div class="radio-title">Реферальная программа</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ПРИСОЕДИНЕНИЯ К СДЕЛКЕ -->
+    <div id="joinDealScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromJoin" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Присоединиться к сделке</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="input-group">
+                <label>Введите ID сделки</label>
+                <input type="text" id="joinDealIdInput" placeholder="Например: #AbCdEfGh1234">
+            </div>
+            <button class="btn" id="submitJoinDealBtn">Присоединиться</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ИНФОРМАЦИИ -->
+    <div id="infoScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromInfo" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Информация</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card info-text">
+            <h4>Trust Zipper — безопасные сделки</h4>
+            <br>
+            <strong>Как это работает:</strong>
+            <ul>
+                <li>Вы создаёте сделку как продавец</li>
+                <li>Покупатель присоединяется по ссылке</li>
+                <li>Покупатель оплачивает — деньги в безопасности</li>
+                <li>Админ подтверждает оплату</li>
+                <li>Вы отправляете товар/услугу</li>
+                <li>Покупатель подтверждает получение</li>
+            </ul>
+            <strong>Гарантии:</strong>
+            <ul>
+                <li>Залоговый фонд: 100€</li>
+                <li>Все сделки под защитой администрации</li>
+                <li>В случае обмана — 100% компенсация</li>
+            </ul>
+            <strong>Важно!</strong> Никогда не переводите деньги напрямую.
+        </div>
+    </div>
+
+    <!-- ЭКРАН ПОДДЕРЖКИ -->
+    <div id="supportScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromSupport" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Поддержка</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card support-text">
+            <h4>Техническая поддержка Trust Zipper</h4>
+            <br>
+            <strong>По всем вопросам:</strong> <a href="https://t.me/huntsboss" class="support-link" target="_blank">@huntsboss</a>
+            <br><br>
+            <strong>Время ответа:</strong> до 5 минут<br>
+            <strong>Режим работы:</strong> 24/7
+        </div>
+    </div>
+
+    <!-- ЭКРАН РЕФЕРАЛЬНОЙ ПРОГРАММЫ -->
+    <div id="referralScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromReferral" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Реферальная программа</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <h4 style="color: #a855f7; margin-bottom: 16px;">Trust Zipper — реферальная система</h4>
+            <p style="margin-bottom: 16px;">Приглашайте друзей и получайте 5% от их сделок!</p>
+            <div class="input-group">
+                <label>Ваша реферальная ссылка</label>
+                <div class="flex-between" style="gap: 8px;">
+                    <input type="text" id="referralLinkInput" readonly style="flex: 1; font-size: 12px;" value="Загрузка...">
+                    <button id="copyReferralLinkBtn" class="btn" style="width: auto; padding: 12px 16px;">Копировать</button>
+                </div>
+            </div>
+            <p style="color: #8a8f9e; font-size: 13px; margin-top: 16px;">Выплаты происходят автоматически после завершения сделок!</p>
+        </div>
+    </div>
+
+    <!-- ЭКРАН УПРАВЛЕНИЯ КОШЕЛЬКАМИ -->
+    <div id="walletScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromWallet" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Управление кошельками</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="radio-group" style="gap: 8px;">
+                <div class="radio-option" data-wallet-action="add_card">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Банковская карта</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-wallet-action="add_crypto">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Криптовалюта</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-wallet-action="add_ton">
+                    <div class="radio-option-content">
+                        <div class="radio-title">TON кошелёк</div>
+                    </div>
+                </div>
+                <div class="radio-option" data-wallet-action="list_wallets">
+                    <div class="radio-option-content">
+                        <div class="radio-title">Мои кошельки</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ДОБАВЛЕНИЯ КАРТЫ -->
+    <div id="addCardScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromCard" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Добавление карты</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456">
+            <button class="btn mt-3" id="saveCardBtn">Сохранить карту</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ВЫБОРА КРИПТОВАЛЮТЫ -->
+    <div id="selectCryptoScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromCrypto" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Выбор криптовалюты</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="radio-group">
+                <div class="radio-option" data-crypto-type="btc"><div class="radio-option-content"><div class="radio-title">Bitcoin</div></div></div>
+                <div class="radio-option" data-crypto-type="eth"><div class="radio-option-content"><div class="radio-title">Ethereum</div></div></div>
+                <div class="radio-option" data-crypto-type="usdt"><div class="radio-option-content"><div class="radio-title">USDT</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ДОБАВЛЕНИЯ КРИПТОКОШЕЛЬКА -->
+    <div id="addCryptoScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToCryptoSelect" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3 id="cryptoScreenTitle">Добавление кошелька</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <p id="cryptoPrompt" style="margin-bottom: 16px;">Введите адрес кошелька:</p>
+            <input type="text" id="cryptoAddress" placeholder="Введите адрес">
+            <button class="btn mt-3" id="saveCryptoBtn">Сохранить кошелек</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ДОБАВЛЕНИЯ TON КОШЕЛЬКА -->
+    <div id="addTonScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromTon" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Добавление TON кошелька</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <input type="text" id="tonAddress" placeholder="Введите адрес TON кошелька">
+            <button class="btn mt-3" id="saveTonBtn">Сохранить TON кошелек</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН СПИСКА КОШЕЛЬКОВ -->
+    <div id="listWalletsScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToWalletFromList" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Мои кошельки</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card" id="walletsListContainer">
+            <div id="walletsList">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ИСТОРИИ СДЕЛОК -->
+    <div id="historyScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromHistory" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>История сделок</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card" id="historyListContainer">
+            <div id="historyList">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН СОЗДАНИЯ СДЕЛКИ -->
+    <div id="createDealScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromCreate" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <h3>Создание сделки</h3>
+            <div style="width: 50px;"></div>
+        </div>
+        <div class="card">
+            <div class="input-group">
+                <label>Название сделки</label>
+                <input type="text" id="dealName" placeholder="Например: Покупка товара">
+            </div>
+
+            <label>Тип сделки</label>
+            <div class="radio-group">
+                <div class="radio-option" data-type="normal">
+                    <input type="radio" name="dealType" value="normal" checked>
+                    <div class="radio-option-content"><div class="radio-title">Обычная</div><div class="radio-desc">Продажа товара или услуги</div></div>
+                </div>
+                <div class="radio-option" data-type="channel">
+                    <input type="radio" name="dealType" value="channel">
+                    <div class="radio-option-content"><div class="radio-title">Продажа канала</div><div class="radio-desc">Продажа Telegram канала</div></div>
+                </div>
+            </div>
+
+            <label class="mt-3">Валюта сделки</label>
+            <div class="currency-grid" id="currencyGrid">
+                <div class="currency-item" data-currency="TON">TON</div>
+                <div class="currency-item" data-currency="USDT">USDT</div>
+                <div class="currency-item" data-currency="RUB">Рубли</div>
+                <div class="currency-item" data-currency="STARS">Звёзды</div>
+                <div class="currency-item" data-currency="UAH">Гривны</div>
+                <div class="currency-item" data-currency="EUR">Евро</div>
+            </div>
+
+            <div class="input-group mt-3">
+                <label>Сумма</label>
+                <input type="number" id="amount" placeholder="10.5" step="0.01">
+                <div style="font-size: 12px; color: #8a8f9e; margin-top: 4px;">Минимальная сумма: 0.1</div>
+            </div>
+
+            <label>Кто оплачивает комиссию 2%?</label>
+            <div class="radio-group">
+                <div class="radio-option" data-payer="buyer">
+                    <input type="radio" name="feePayer" value="buyer" checked>
+                    <div class="radio-option-content"><div class="radio-title">Покупатель</div><div class="radio-desc">Покупатель платит сумму + комиссию</div></div>
+                </div>
+                <div class="radio-option" data-payer="seller">
+                    <input type="radio" name="feePayer" value="seller">
+                    <div class="radio-option-content"><div class="radio-title">Продавец</div><div class="radio-desc">Комиссия вычитается из суммы</div></div>
+                </div>
+            </div>
+
+            <div class="input-group mt-3">
+                <label>Доп. информация (необязательно)</label>
+                <textarea id="additionalInfo" rows="2" placeholder="Дополнительная информация..." maxlength="20"></textarea>
+                <div style="font-size: 12px; color: #8a8f9e;" id="charCount">0 / 20</div>
+            </div>
+
+            <button class="btn" id="submitDealBtn">Создать сделку</button>
+            <button class="btn btn-secondary mt-3" id="cancelCreateBtn">Отмена</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ПРОГРЕССА СДЕЛКИ -->
+    <div id="dealProgressScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromProgress" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="card">
+            <div class="flex-between mb-2"><span>Название</span><span id="dealNameValue">—</span></div>
+            <div class="flex-between mb-2"><span>Сумма</span><span id="dealAmount" class="deal-amount">0</span></div>
+            <div class="flex-between mb-2"><span>Продавец</span><span id="sellerName">—</span></div>
+            <div class="flex-between mb-2"><span>Покупатель</span><span id="buyerName">Ожидается</span></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><span class="card-title">Прогресс сделки</span></div>
+            <div id="waitingBuyer"><div class="step"><div class="step-icon">⏳</div><div class="step-content"><div class="step-title">Ожидание покупателя</div></div></div></div>
+            <div id="progressSteps" class="progress-steps hidden">
+                <div class="step"><div class="step-icon" id="step2Icon">⏳</div><div class="step-content"><div class="step-title">Ожидание оплаты</div></div></div>
+                <div class="step"><div class="step-icon" id="step3Icon">⏳</div><div class="step-content"><div class="step-title">Оплата подтверждена</div></div></div>
+                <div class="step"><div class="step-icon" id="step4Icon">⏳</div><div class="step-content"><div class="step-title">Услуга оказана</div></div></div>
+                <div class="step"><div class="step-icon" id="step5Icon">⏳</div><div class="step-content"><div class="step-title">Сделка завершена</div></div></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="deal-id-display"><span class="deal-id-code" id="dealIdValue">—</span><button id="copyDealIdBtn" class="btn" style="width: auto;">Копировать</button></div>
+        </div>
+        <button class="btn btn-secondary mt-3" id="inviteBuyerBtn">Пригласить покупателя</button>
+    </div>
+
+    <!-- ЭКРАН "СДЕЛКА УСПЕШНО СОЗДАНА" -->
+    <div id="dealCreatedScreen" class="hidden">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <button id="backToMainFromDealCreated" class="btn btn-secondary" style="width: auto; padding: 10px 16px;">← Назад</button>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="card text-center">
+            <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10.0558 10.0338V3.22778H3.24976V10.0338H10.0558Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M13.9441 20.7271H20.7501V13.9211H13.9441V20.7271Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M16.3751 3.22778H13.9451V7.34778" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M20.7501 4.92878V3.22778H19.0491" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M20.7501 7.60278V10.0328H19.0491" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M13.9451 10.0327H16.1651" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M16.2673 5.59253V7.81153H18.0963" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M18.6936 5.58276V5.59276" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M6.6521 6.58163V6.67863" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M6.6521 17.2755V17.3725" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M17.3474 17.2755V17.3725" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                    <path d="M3.24976 13.9211V20.7271H10.0558V13.9211H3.24976Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="square"/>
+                </svg>
+            </div>
+            <h3 style="color: #a855f7; margin-bottom: 16px;">Сделка успешно создана!</h3>
+            
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center;">
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #8a8f9e;">Сумма:</span>
+                    <span id="dealCreatedAmount" style="font-weight: 700; display: block; font-size: 20px;">0</span>
+                </div>
+                <div>
+                    <span style="color: #8a8f9e;">ID сделки:</span>
+                    <span id="dealCreatedId" style="font-family: monospace; display: block;">—</span>
+                </div>
+            </div>
+            
+            <button id="copyPaymentLinkBtn" class="btn" style="margin-bottom: 12px;">Копировать ссылку</button>
+            
+            <div style="text-align: center; margin-bottom: 16px;">
+                <p style="font-size: 13px; color: #8a8f9e; margin-bottom: 4px;">Отправьте ссылку покупателю для оплаты.</p>
+                <p style="font-size: 13px; color: #8a8f9e;">Средства защищены гарантией Trust Zipper</p>
+            </div>
+            
+            <button id="checkPaymentStatusBtn" class="btn btn-secondary" style="margin-bottom: 16px;">Проверить оплату</button>
+            
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">
+                Оплата проходит за 1-3 минуты<br>
+                Поддержка: <a href="https://t.me/huntsboss" style="color: #a855f7;">@huntsboss</a>
+            </p>
+            
+            <button class="btn btn-secondary" id="backToMainFromDealCreatedBtn">На главную</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ОПЛАТЫ (ДЛЯ ПОКУПАТЕЛЯ) -->
+    <div id="paymentScreen" class="hidden">
+        <div class="card" style="text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="2" width="18" height="6" rx="2" stroke="#a855f7" stroke-width="2"/>
+                    <path d="M6 8 H18 V20 L16.5 19 L15 20 L13.5 19 L12 20 L10.5 19 L9 20 L7.5 19 L6 20 Z" stroke="#a855f7" stroke-width="2" fill="none"/>
+                    <line x1="9" y1="11" x2="15" y2="11" stroke="#a855f7" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="9" y1="14" x2="13" y2="14" stroke="#a855f7" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <h2 style="color: #ffffff; margin-bottom: 8px;">Оплата сделки</h2>
+            <p style="color: #8a8f9e; margin-bottom: 24px;">Выберите способ оплаты</p>
+
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                <div class="flex-between mb-2"><span style="color: #8a8f9e;">Описание:</span><span id="paymentDealName" style="font-weight: 500;">—</span></div>
+                <div class="flex-between mb-2"><span style="color: #8a8f9e;">Сумма:</span><span id="paymentDealAmount" style="font-weight: 700; color: #a855f7;">—</span></div>
+                <div class="flex-between"><span style="color: #8a8f9e;">ID сделки:</span><span id="paymentDealId" style="font-family: monospace;">—</span></div>
+            </div>
+
+            <button id="openPaymentOptionsBtn" class="btn" style="background: #a855f7; margin-bottom: 20px;">Оплатить</button>
+
+            <div id="cardPaymentBlock" class="hidden" style="margin-top: 8px;">
+                <div style="background: #0a0c10; border-radius: 16px; padding: 20px; text-align: left;">
+                    <h4 style="color: #a855f7; margin-bottom: 16px; text-align: center;">Оплата картой через гаранта</h4>
+                    <div style="background: #15171e; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+                        <div class="flex-between mb-2"><span style="color: #8a8f9e;">Сумма к оплате:</span><span id="cardAmount" style="font-weight: 700; color: #22c55e;">—</span></div>
+                        <div class="flex-between"><span style="color: #8a8f9e;">Номер карты:</span><span id="cardNumberDisplay" style="font-family: monospace;">7461 9371 4371 4819</span><button id="copyCardNumberBtn" class="btn" style="width: auto; padding: 6px 12px;">Копировать</button></div>
+                    </div>
+                    <div style="background: #15171e; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+                        <p style="font-weight: 600;">Инструкция по оплате:</p>
+                        <ol style="margin-left: 20px; color: #8a8f9e; font-size: 13px;"><li>Откройте ваш кошелек</li><li>Нажмите «Отправить»</li><li>Введите адрес получателя</li><li>Укажите точную сумму: <span id="cardAmountInline" style="color: #a855f7;">—</span></li><li>Подтвердите транзакцию</li></ol>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.1); border-radius:12px; padding:12px; margin-bottom:16px; border-left:3px solid #f59e0b;">
+                        <p style="font-weight:600; color:#f59e0b;">ВНИМАНИЕ:</p>
+                        <ul style="margin-left:20px; color:#8a8f9e; font-size:12px;"><li>Отправляйте ТОЧНУЮ сумму</li><li>Комиссия сети оплачивается отдельно</li><li>Сохраните чек</li><li>Подтверждение 1-3 минуты</li></ul>
+                    </div>
+                    <button id="confirmCardPaymentBtn" class="btn" style="background: #22c55e;">Я оплатил(а)</button>
+                </div>
+            </div>
+
+            <div id="cryptoPaymentBlock" class="hidden" style="margin-top: 8px;">
+                <div style="background: #0a0c10; border-radius: 16px; padding: 20px; text-align: left;">
+                    <h4 style="color: #a855f7; margin-bottom: 16px; text-align: center;">Оплата криптовалютой (USDT TRC20)</h4>
+                    <div style="background: #15171e; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+                        <div class="flex-between mb-2"><span style="color: #8a8f9e;">Сумма к оплате:</span><span id="cryptoAmount" style="font-weight: 700; color: #22c55e;">—</span></div>
+                        <div class="flex-between mb-2"><span style="color: #8a8f9e;">Кошелек получателя:</span><span id="walletAddress" style="font-family: monospace; font-size:11px;">UQBqIMp59E-NRGBRmhT5pAiQBXpWEImu0g2BFrhkm_lkm-Qr</span></div>
+                        <div class="flex-between"><span style="color: #8a8f9e;">Сеть:</span><span>TRC20</span><button id="copyWalletBtn" class="btn" style="width: auto; padding: 6px 12px;">Копировать</button></div>
+                    </div>
+                    <div style="background: #15171e; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+                        <p style="font-weight: 600;">Инструкция:</p>
+                        <ol style="margin-left:20px; color:#8a8f9e; font-size:13px;"><li>Откройте кошелек USDT</li><li>Выберите сеть TRC20</li><li>Вставьте адрес кошелька</li><li>Укажите точную сумму: <span id="cryptoAmountInline" style="color:#a855f7;">—</span></li><li>Подтвердите транзакцию</li></ol>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.1); border-radius:12px; padding:12px; margin-bottom:16px; border-left:3px solid #f59e0b;">
+                        <p style="font-weight:600; color:#f59e0b;">ВАЖНО:</p>
+                        <ul style="margin-left:20px; color:#8a8f9e; font-size:12px;"><li>ТОЛЬКО сеть TRC20</li><li>Проверяйте адрес</li><li>Комиссия 1-3 USDT</li><li>Подтверждение 2-5 минут</li></ul>
+                    </div>
+                    <button id="confirmCryptoPaymentBtn" class="btn" style="background: #22c55e;">Я оплатил(а)</button>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; padding:12px; background:#15171e; border-radius:12px;">
+                <p style="font-size:13px; color:#8a8f9e; text-align:center;">Поддержка: @huntsboss</p>
+            </div>
+
+            <button id="backToDealFromPayment" class="btn btn-secondary mt-3">На главную</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН "СДЕЛКА ОПЛАЧЕНА" (ДЛЯ ПРОДАВЦА - ФИОЛЕТОВЫЙ) -->
+    <div id="dealPaidScreen" class="hidden">
+        <div class="card" style="text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.9357 19.9023L17.6956 20.2661C18.4944 20.6485 19.4187 20.0657 19.4177 19.1793L19.408 6.92492C19.408 4.50225 18.0604 3 15.6417 3H8.34252C5.91791 3 4.59955 4.50225 4.59955 6.92492L4.58203 19.1774C4.58106 20.0638 5.50537 20.6475 6.30514 20.2642L7.05919 19.9032C7.51259 19.6853 8.03701 19.6697 8.50306 19.8604L10.6494 20.7351C11.5144 21.0883 12.4844 21.0883 13.3494 20.7351L15.4918 19.8604C15.9579 19.6697 16.4823 19.6853 16.9357 19.9023Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.25586 14.4531H14.3639" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.66602 9.83875L11.2082 11.3809L14.3644 8.22461" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 style="color: #a855f7; margin-bottom: 8px;">Поступила оплата!</h2>
+            <p style="color: #8a8f9e; margin-bottom: 24px;">Покупатель оплатил сделку</p>
+
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;">ID сделки:</span>
+                    <span id="paidDealId" style="font-family: monospace; font-weight: 500;">—</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;">Сумма:</span>
+                    <span id="paidDealAmount" style="font-weight: 700; color: #a855f7;">—</span>
+                </div>
+                <div class="flex-between">
+                    <span style="color: #8a8f9e;">Покупатель:</span>
+                    <span id="paidBuyerName" style="font-weight: 500;">—</span>
+                </div>
+            </div>
+
+            <div style="background: #15171e; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: left;">
+                <p style="margin-bottom: 12px;">После отправки NFT деньги поступят автоматически</p>
+                <p style="margin-bottom: 12px;">Можете отправлять NFT покупателю</p>
+                <p style="margin-bottom: 12px;">После подтверждения получения покупателем средства будут зачислены на ваш счёт</p>
+                <p style="margin-bottom: 12px;">Обычно проверка занимает до 30 минут</p>
+                <p style="color: #f59e0b; margin-bottom: 12px;">Не отправляйте скриншоты покупателю - только в поддержку!</p>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #15171e; border-radius: 12px;">
+                <p style="font-size: 13px; color: #8a8f9e;">Гарант: Trust Zipper</p>
+                <p style="font-size: 13px; color: #8a8f9e;">Поддержка: @huntsboss</p>
+            </div>
+
+            <button id="confirmGoodsReceivedBtn" class="btn" style="background: #a855f7;">Я получил(а) подарок</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН "ОЖИДАНИЕ NFT" (ДЛЯ ПОКУПАТЕЛЯ - ПОСЛЕ ОПЛАТЫ) -->
+    <div id="buyerWaitingScreen" class="hidden">
+        <div class="card" style="text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.9357 19.9023L17.6956 20.2661C18.4944 20.6485 19.4187 20.0657 19.4177 19.1793L19.408 6.92492C19.408 4.50225 18.0604 3 15.6417 3H8.34252C5.91791 3 4.59955 4.50225 4.59955 6.92492L4.58203 19.1774C4.58106 20.0638 5.50537 20.6475 6.30514 20.2642L7.05919 19.9032C7.51259 19.6853 8.03701 19.6697 8.50306 19.8604L10.6494 20.7351C11.5144 21.0883 12.4844 21.0883 13.3494 20.7351L15.4918 19.8604C15.9579 19.6697 16.4823 19.6853 16.9357 19.9023Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.25586 14.4531H14.3639" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.66602 9.83875L11.2082 11.3809L14.3644 8.22461" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 style="color: #a855f7; margin-bottom: 8px;">Оплата подтверждена!</h2>
+            <p style="color: #8a8f9e; margin-bottom: 24px;">Ожидайте получения NFT от продавца</p>
+
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;">ID сделки:</span>
+                    <span id="waitingDealId" style="font-family: monospace; font-weight: 500;">—</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;">Сумма:</span>
+                    <span id="waitingDealAmount" style="font-weight: 700; color: #a855f7;">—</span>
+                </div>
+                <div class="flex-between">
+                    <span style="color: #8a8f9e;">Продавец:</span>
+                    <span id="waitingSellerName" style="font-weight: 500;">—</span>
+                </div>
+            </div>
+
+            <div style="background: #15171e; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: left;">
+                <p style="margin-bottom: 12px;">Обычно отправка занимает до 30 минут</p>
+                <p style="margin-bottom: 12px;">После отправки NFT деньги поступят автоматически</p>
+                <p style="margin-bottom: 12px;">После получения NFT нажмите кнопку</p>
+                <p style="margin-bottom: 12px;">Только после вашего подтверждения продавец получит средства</p>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #15171e; border-radius: 12px;">
+                <p style="font-size: 13px; color: #8a8f9e;">Ваши деньги защищены гарантией Trust Zipper</p>
+                <p style="font-size: 13px; color: #8a8f9e;">Поддержка: @huntsboss</p>
+            </div>
+
+            <button id="confirmGoodsReceivedBuyerBtn" class="btn" style="background: #a855f7;">Я получил(а) подарок</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН "ПОКУПАТЕЛЬ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ" (ДЛЯ ОБОИХ) -->
+    <div id="buyerConfirmedScreen" class="hidden">
+        <div class="card" style="text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.87353 17.401C9.75504 18.2241 12.3558 16.8697 14.6832 14.377C17.0095 11.8842 18.182 9.19686 17.3005 8.37372C16.419 7.55058 13.8172 8.90497 11.4908 11.3977C9.16347 13.8905 7.99201 16.5779 8.87353 17.401Z" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3.20898 6.875H3.23234M5.91032 17.1323H5.93367" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M17.453 8.57031L20.9664 19.6039C21.1299 20.1195 20.6609 20.6138 20.1364 20.4766L9.20312 17.5995" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M15.3633 19.2191C16.0872 18.6976 16.8403 18.0223 17.5642 17.2508C18.326 16.4296 18.9633 15.5899 19.4459 14.8086" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6.44725 14.081C6.44725 14.081 4.59568 13.938 3 15.6621" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M9.57231 5.97024C9.57231 6.62505 9.04107 7.1563 8.38626 7.1563C7.73144 7.1563 7.20117 6.62505 7.20117 5.97024C7.20117 5.31543 7.73144 4.78516 8.38626 4.78516C9.04107 4.78516 9.57231 5.31543 9.57231 5.97024Z" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12.7314 12.6807C12.7314 12.6807 9.48558 9.33172 4.51367 10.7474" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13.8508 3.5C13.8508 3.5 11.9711 6.07352 14.0532 9.16758" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 style="color: #22c55e; margin-bottom: 8px;">Покупатель подтвердил получение NFT!</h2>
+            <p style="color: #8a8f9e; margin-bottom: 24px;">Средства будут зачислены на ваш счёт</p>
+
+            <div style="background: #0a0c10; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;">ID сделки:</span>
+                    <span id="confirmedDealId" style="font-family: monospace; font-weight: 500;">—</span>
+                </div>
+                <div class="flex-between mb-2">
+                    <span style="color: #8a8f9e;">Сумма:</span>
+                    <span id="confirmedDealAmount" style="font-weight: 700; color: #22c55e;">—</span>
+                </div>
+                <div class="flex-between">
+                    <span style="color: #8a8f9e;">Покупатель:</span>
+                    <span id="confirmedBuyerName" style="font-weight: 500;">—</span>
+                </div>
+            </div>
+
+            <div style="background: #15171e; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: left;">
+                <p style="margin-bottom: 12px;">Средства будут зачислены на ваш счет в течение 5-10 минут</p>
+                <p style="margin-bottom: 12px;">После подтверждения поддержкой вы получите уведомление</p>
+                <p style="margin-bottom: 12px;">Обычно проверка занимает до 15 минут</p>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #15171e; border-radius: 12px;">
+                <p style="font-size: 13px; color: #8a8f9e;">Гарант: Trust Zipper</p>
+                <p style="font-size: 13px; color: #8a8f9e;">Поддержка: @huntsboss</p>
+            </div>
+
+            <button id="backToMainFromConfirmedBtn" class="btn btn-secondary mt-3">На главную</button>
+        </div>
+    </div>
+
+    <!-- ФИНАЛЬНЫЙ ЭКРАН -->
+    <div id="successScreen" class="hidden">
+        <div class="success-screen">
+            <div class="success-icon">✅</div>
+            <div class="success-title">Сделка завершена</div>
+            <div class="success-text">Успешно закрыта</div>
+            <button class="btn" id="backToMainFromSuccess">На главную</button>
+        </div>
+    </div>
+</div>
+
+<script>
 // ======================================================
-// ПРОСТАЯ И НАДЁЖНАЯ СИСТЕМА (ДАННЫЕ В ССЫЛКЕ)
+// НОВАЯ ВЕРСИЯ - ДАННЫЕ ПРЯМО В ССЫЛКЕ (pay_DATA_...)
 // ======================================================
 
 let tg = null;
 let currentUser = null;
 let dealProgress = 0;
-
-// ======================================================
-// ИНИЦИАЛИЗАЦИЯ
-// ======================================================
 
 try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -46,10 +1103,7 @@ function getStartParam() {
     try { return tg.initDataUnsafe?.start_param || null; } catch(e) { return null; }
 }
 
-// ======================================================
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-// ======================================================
-
+// ========== ПЕРЕМЕННЫЕ ==========
 let wallets = {};
 let deals = [];
 let currentDeal = null;
@@ -61,10 +1115,6 @@ let currentBuyerUsername = null;
 
 const currencySymbols = { 'TON': 'TON', 'USDT': 'USDT', 'RUB': '₽', 'STARS': '★', 'UAH': '₴', 'EUR': '€' };
 const BOT_USERNAME = 'TrustZippersBot';
-
-// ======================================================
-// ХРАНЕНИЕ
-// ======================================================
 
 try { const saved = localStorage.getItem('trustzipper_wallets'); if (saved) wallets = JSON.parse(saved); } catch(e) { wallets = {}; }
 try { const saved = localStorage.getItem('trustzipper_deals'); if (saved) deals = JSON.parse(saved); } catch(e) { deals = []; }
@@ -81,10 +1131,7 @@ function updateDealStatus(dealId, status) {
     }
 }
 
-// ======================================================
-// КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ (ГЛАВНОЕ!)
-// ======================================================
-
+// ========== КОДИРОВАНИЕ ДАННЫХ В ССЫЛКУ ==========
 function encodeDealData(deal) {
     const data = {
         id: deal.id,
@@ -116,10 +1163,7 @@ function decodeDealData(encoded) {
     } catch(e) { return null; }
 }
 
-// ======================================================
-// ВСПОМОГАТЕЛЬНЫЕ
-// ======================================================
-
+// ========== ВСПОМОГАТЕЛЬНЫЕ ==========
 function generateDealId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '#';
@@ -152,17 +1196,13 @@ function showMessage(title, message) {
 
 function safeCopy(text) {
     if (!text) return;
-    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } } catch(e) {}
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text); else { let ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showMessage('Скопировано', 'Отправьте ссылку покупателю для оплаты сделки.'); } catch(e) {}
 }
 
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; });
 }
-
-// ======================================================
-// ОТОБРАЖЕНИЕ
-// ======================================================
 
 function renderWalletsList() {
     const container = document.getElementById('walletsList');
@@ -217,24 +1257,12 @@ function showScreenById(screenId) {
     currentScreen = screenId;
 }
 
-// ======================================================
-// ОКНО ОПЛАТЫ С ОТПРАВКОЙ УВЕДОМЛЕНИЯ ПРОДАВЦУ
-// ======================================================
-
 function openPaymentScreen(deal) {
-    if (!deal) {
-        showMessage('Ошибка', 'Сделка не найдена');
-        showScreenById('mainScreen');
-        return;
-    }
-
+    if (!deal) { showMessage('Ошибка', 'Сделка не найдена'); showScreenById('mainScreen'); return; }
     console.log('ОТКРЫВАЕМ ОПЛАТУ:', deal);
     currentDeal = deal;
-
     const formattedAmount = formatAmount(deal.amount, deal.currency || 'USDT');
-
     function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
-
     setText('paymentDealName', deal.name || 'Сделка');
     setText('paymentDealAmount', formattedAmount);
     setText('paymentDealId', deal.id);
@@ -242,16 +1270,13 @@ function openPaymentScreen(deal) {
     setText('cryptoAmount', formattedAmount);
     setText('cardAmountInline', formattedAmount);
     setText('cryptoAmountInline', formattedAmount);
-
     const cardBlock = document.getElementById('cardPaymentBlock');
     const cryptoBlock = document.getElementById('cryptoPaymentBlock');
     if (cardBlock) cardBlock.classList.add('hidden');
     if (cryptoBlock) cryptoBlock.classList.add('hidden');
-
     isPaymentOptionsVisible = false;
     const btn = document.getElementById('openPaymentOptionsBtn');
     if (btn) btn.textContent = 'Оплатить';
-
     showScreenById('paymentScreen');
 }
 
@@ -266,29 +1291,10 @@ function togglePaymentOptions() {
 function copyCardNumber() { let num = document.getElementById('cardNumberDisplay')?.textContent; if (num) safeCopy(num); }
 function copyWalletAddress() { let addr = document.getElementById('walletAddress')?.textContent; if (addr) safeCopy(addr); }
 
-// ========== ОБНОВЛЁННЫЕ ФУНКЦИИ С ОТПРАВКОЙ УВЕДОМЛЕНИЙ ==========
-
 function confirmCardPayment() { 
     showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты');
     if (currentDeal) {
         updateDealStatus(currentDeal.id, 'paid');
-        
-        // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ ПРОДАВЦУ ЧЕРЕЗ БОТА
-        if (tg && tg.sendData) {
-            try {
-                tg.sendData(JSON.stringify({
-                    action: 'payment_confirmed',
-                    deal_id: currentDeal.id,
-                    buyer_id: currentUser.id,
-                    buyer_username: currentUser.username || `id${currentUser.id}`,
-                    amount: currentDeal.amount,
-                    currency: currentDeal.currency,
-                    deal_name: currentDeal.name
-                }));
-                console.log('Уведомление отправлено продавцу');
-            } catch(e) { console.log('Send data error:', e); }
-        }
-        
         // Покупатель после оплаты видит экран ожидания NFT
         setTimeout(() => openBuyerWaitingScreen(currentDeal), 500);
     }
@@ -298,121 +1304,12 @@ function confirmCryptoPayment() {
     showMessage('Отправлено', 'Ожидайте проверки 2-5 минут');
     if (currentDeal) {
         updateDealStatus(currentDeal.id, 'paid');
-        
-        // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ ПРОДАВЦУ ЧЕРЕЗ БОТА
-        if (tg && tg.sendData) {
-            try {
-                tg.sendData(JSON.stringify({
-                    action: 'payment_confirmed',
-                    deal_id: currentDeal.id,
-                    buyer_id: currentUser.id,
-                    buyer_username: currentUser.username || `id${currentUser.id}`,
-                    amount: currentDeal.amount,
-                    currency: currentDeal.currency,
-                    deal_name: currentDeal.name
-                }));
-                console.log('Уведомление отправлено продавцу');
-            } catch(e) { console.log('Send data error:', e); }
-        }
-        
+        // Покупатель после оплаты видит экран ожидания NFT
         setTimeout(() => openBuyerWaitingScreen(currentDeal), 500);
     }
 }
 
-// ======================================================
-// ОБРАБОТКА ДАННЫХ ОТ БОТА (КОГДА ПРИХОДИТ ПОДТВЕРЖДЕНИЕ ОПЛАТЫ)
-// ======================================================
-
-if (tg && tg.onEvent) {
-    tg.onEvent('web_app_data_sent', (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            console.log('Получены данные от бота:', data);
-            
-            if (data.action === 'payment_confirmed_to_seller') {
-                // Обновляем сделку у продавца
-                const dealId = data.deal_id;
-                const buyerUsername = data.buyer_username;
-                const buyerId = data.buyer_id;
-                
-                const index = deals.findIndex(d => d.id === dealId);
-                if (index !== -1 && deals[index].sellerId === currentUser.id) {
-                    deals[index].status = 'paid';
-                    deals[index].buyerUsername = buyerUsername;
-                    deals[index].buyerId = buyerId;
-                    saveDeals();
-                    renderHistoryList();
-                    
-                    // Если эта сделка сейчас открыта у продавца - обновляем экран
-                    if (currentDeal && currentDeal.id === dealId) {
-                        currentDeal = deals[index];
-                        showMessage('Оплата получена!', `Покупатель ${buyerUsername} оплатил сделку. Можете отправлять NFT.`);
-                        openDealPaidScreen(currentDeal);
-                    }
-                }
-            }
-        } catch(e) { console.error('Ошибка обработки данных:', e); }
-    });
-}
-
-// ======================================================
-// ЭКРАН "СДЕЛКА ОПЛАЧЕНА" (ДЛЯ ПРОДАВЦА)
-// ======================================================
-
-function openDealPaidScreen(deal) {
-    if (!deal) deal = currentDeal;
-    if (!deal) return;
-    
-    console.log('ОТКРЫВАЕМ ЭКРАН ОПЛАЧЕНО:', deal);
-    
-    const formattedAmount = formatAmount(deal.amount, deal.currency);
-    if (document.getElementById('paidDealId')) document.getElementById('paidDealId').textContent = deal.id;
-    if (document.getElementById('paidDealAmount')) document.getElementById('paidDealAmount').textContent = formattedAmount;
-    if (document.getElementById('paidBuyerName')) document.getElementById('paidBuyerName').textContent = deal.buyerUsername || 'Покупатель';
-    
-    showScreenById('dealPaidScreen');
-}
-
-// ======================================================
-// ЭКРАН "ОЖИДАНИЕ NFT" (ДЛЯ ПОКУПАТЕЛЯ)
-// ======================================================
-
-function openBuyerWaitingScreen(deal) {
-    if (!deal) deal = currentDeal;
-    if (!deal) return;
-    
-    console.log('ОТКРЫВАЕМ ЭКРАН ОЖИДАНИЯ NFT:', deal);
-    
-    const formattedAmount = formatAmount(deal.amount, deal.currency);
-    if (document.getElementById('waitingDealId')) document.getElementById('waitingDealId').textContent = deal.id;
-    if (document.getElementById('waitingDealAmount')) document.getElementById('waitingDealAmount').textContent = formattedAmount;
-    if (document.getElementById('waitingSellerName')) document.getElementById('waitingSellerName').textContent = deal.sellerUsername || 'Продавец';
-    
-    showScreenById('buyerWaitingScreen');
-}
-
-// ======================================================
-// ЭКРАН "ПОКУПАТЕЛЬ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ"
-// ======================================================
-
-function openBuyerConfirmedScreen(deal) {
-    if (!deal) deal = currentDeal;
-    if (!deal) return;
-    
-    console.log('ОТКРЫВАЕМ ЭКРАН ПОДТВЕРЖДЕНИЯ:', deal);
-    
-    const formattedAmount = formatAmount(deal.amount, deal.currency);
-    if (document.getElementById('confirmedDealId')) document.getElementById('confirmedDealId').textContent = deal.id;
-    if (document.getElementById('confirmedDealAmount')) document.getElementById('confirmedDealAmount').textContent = formattedAmount;
-    if (document.getElementById('confirmedBuyerName')) document.getElementById('confirmedBuyerName').textContent = deal.buyerUsername || 'Покупатель';
-    
-    showScreenById('buyerConfirmedScreen');
-}
-
-// ======================================================
-// ПРОВЕРКА СТАТУСА ОПЛАТЫ (ДЛЯ ПРОДАВЦА) - ОБНОВЛЁННАЯ
-// ======================================================
-
+// ========== ПРОВЕРКА СТАТУСА ОПЛАТЫ (ДЛЯ ПРОДАВЦА) ==========
 function checkPaymentStatus() {
     if (!currentDeal) {
         showMessage('Ошибка', 'Сделка не найдена');
@@ -423,62 +1320,54 @@ function checkPaymentStatus() {
     const updatedDeal = deals.find(d => d.id === currentDeal.id);
     
     if (updatedDeal && updatedDeal.status === 'paid') {
-        showMessage('Оплата подтверждена!', `Покупатель ${updatedDeal.buyerUsername || 'Покупатель'} оплатил сделку.`);
+        showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку. Переходим к подтверждению.');
+        // Обновляем currentDeal
         currentDeal = updatedDeal;
+        // Открываем экран для продавца
         openDealPaidScreen(currentDeal);
     } else {
-        // Показываем окно с возможностью ручного подтверждения
-        if (tg && tg.showPopup) {
-            tg.showPopup({
-                title: 'Оплата не найдена',
-                message: 'Покупатель ещё не оплатил сделку.\n\nЕсли оплата была произведена через администратора, нажмите "Обновить"',
-                buttons: [
-                    { type: 'cancel', text: 'Отмена' },
-                    { id: 'refresh', type: 'default', text: 'Обновить' }
-                ]
-            }, (buttonId) => {
-                if (buttonId === 'refresh') {
-                    // Повторная проверка
-                    const refreshedDeal = deals.find(d => d.id === currentDeal.id);
-                    if (refreshedDeal && refreshedDeal.status === 'paid') {
-                        showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку.');
-                        currentDeal = refreshedDeal;
-                        openDealPaidScreen(currentDeal);
-                    } else {
-                        showMessage('Оплата не найдена', 'Покупатель ещё не оплатил. Попробуйте позже.');
-                    }
-                }
-            });
-        } else {
-            showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
-        }
+        showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
     }
 }
 
-// ======================================================
-// ОБНОВЛЕНИЕ СТАТУСА ИЗ ВНЕШНЕГО ИСТОЧНИКА
-// ======================================================
-
-function externalPaymentConfirmed(dealId, buyerUsername) {
-    const index = deals.findIndex(d => d.id === dealId);
-    if (index !== -1 && deals[index].status !== 'paid') {
-        deals[index].status = 'paid';
-        deals[index].buyerUsername = buyerUsername;
-        saveDeals();
-        renderHistoryList();
-        
-        // Если это текущая сделка продавца - обновляем экран
-        if (currentDeal && currentDeal.id === dealId && currentDeal.sellerId === currentUser.id) {
-            currentDeal = deals[index];
-            openDealPaidScreen(currentDeal);
-            showMessage('Оплата получена!', 'Покупатель оплатил сделку. Можете отправлять NFT.');
-        }
-    }
+// ========== ЭКРАН "СДЕЛКА ОПЛАЧЕНА" (ДЛЯ ПРОДАВЦА) ==========
+function openDealPaidScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    const formattedAmount = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('paidDealId')) document.getElementById('paidDealId').textContent = deal.id;
+    if (document.getElementById('paidDealAmount')) document.getElementById('paidDealAmount').textContent = formattedAmount;
+    if (document.getElementById('paidBuyerName')) document.getElementById('paidBuyerName').textContent = deal.buyerUsername || 'Покупатель';
+    
+    showScreenById('dealPaidScreen');
 }
 
-// ======================================================
-// СОЗДАНИЕ СДЕЛКИ
-// ======================================================
+// ========== ЭКРАН "ОЖИДАНИЕ NFT" (ДЛЯ ПОКУПАТЕЛЯ) ==========
+function openBuyerWaitingScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    const formattedAmount = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('waitingDealId')) document.getElementById('waitingDealId').textContent = deal.id;
+    if (document.getElementById('waitingDealAmount')) document.getElementById('waitingDealAmount').textContent = formattedAmount;
+    if (document.getElementById('waitingSellerName')) document.getElementById('waitingSellerName').textContent = deal.sellerUsername || 'Продавец';
+    
+    showScreenById('buyerWaitingScreen');
+}
+
+// ========== ЭКРАН "ПОКУПАТЕЛЬ ПОДТВЕРДИЛ ПОЛУЧЕНИЕ" ==========
+function openBuyerConfirmedScreen(deal) {
+    if (!deal) deal = currentDeal;
+    if (!deal) return;
+    
+    const formattedAmount = formatAmount(deal.amount, deal.currency);
+    if (document.getElementById('confirmedDealId')) document.getElementById('confirmedDealId').textContent = deal.id;
+    if (document.getElementById('confirmedDealAmount')) document.getElementById('confirmedDealAmount').textContent = formattedAmount;
+    if (document.getElementById('confirmedBuyerName')) document.getElementById('confirmedBuyerName').textContent = deal.buyerUsername || 'Покупатель';
+    
+    showScreenById('buyerConfirmedScreen');
+}
 
 function createDeal() {
     let name = document.getElementById('dealName')?.value.trim();
@@ -501,23 +1390,18 @@ function createDeal() {
     };
     deals.push(currentDeal);
     saveDeals();
-    
     if (document.getElementById('dealCreatedAmount')) document.getElementById('dealCreatedAmount').textContent = formatAmount(currentDeal.amount, currentDeal.currency);
     if (document.getElementById('dealCreatedId')) document.getElementById('dealCreatedId').textContent = currentDeal.id;
     if (document.getElementById('dealCreatedDesc')) document.getElementById('dealCreatedDesc').textContent = currentDeal.name;
     showScreenById('dealCreatedScreen');
 }
 
-// ======================================================
-// НОВАЯ ССЫЛКА С ДАННЫМИ (РАБОТАЕТ ВСЕГДА!)
-// ======================================================
-
+// ========== ССЫЛКА С ДАННЫМИ ==========
 function copyPaymentLink() {
     if (!currentDeal) { showMessage('Ошибка', 'Сделка не создана'); return; }
     const encodedData = encodeDealData(currentDeal);
     const paymentLink = `https://t.me/${BOT_USERNAME}?startapp=pay_DATA_${encodedData}`;
     safeCopy(paymentLink);
-    showMessage('Ссылка готова!', 'Ссылка содержит ВСЕ данные!\n\nОтправьте её покупателю.\n\nРаботает на ЛЮБОМ устройстве!');
 }
 
 function copyDealId() { if (currentDeal) safeCopy(currentDeal.id); }
@@ -529,10 +1413,7 @@ function inviteBuyer() {
     showMessage('Ссылка скопирована', 'Отправьте её покупателю');
 }
 
-// ======================================================
-// ОБРАБОТКА ССЫЛКИ (ДЕКОДИРУЕМ ДАННЫЕ)
-// ======================================================
-
+// ========== ОБРАБОТКА ССЫЛКИ ==========
 function handleStartParam(startParam) {
     console.log('ОБРАБОТКА ССЫЛКИ:', startParam);
     
@@ -541,7 +1422,6 @@ function handleStartParam(startParam) {
         return;
     }
     
-    // НОВЫЙ ФОРМАТ: pay_DATA_... (данные прямо в ссылке!)
     if (startParam.includes('_DATA_')) {
         let parts = startParam.split('_DATA_');
         if (parts.length >= 2) {
@@ -558,87 +1438,50 @@ function handleStartParam(startParam) {
                 deal.buyerUsername = currentBuyerUsername;
                 setTimeout(() => { openPaymentScreen(deal); }, 100);
                 return;
-            } else {
-                console.log('Ошибка декодирования');
             }
         }
     }
     
-    // СТАРЫЙ ФОРМАТ (на всякий случай)
-    if (startParam.startsWith('pay_') && !startParam.includes('_DATA_')) {
-        let cleanId = startParam.replace('pay_', '');
-        let dealId = '#' + cleanId;
-        let cachedDeal = deals.find(d => d.id === dealId);
-        if (cachedDeal) {
-            openPaymentScreen(cachedDeal);
-            return;
-        }
-    }
-    
-    // Если ничего не подошло - главный экран
     showScreenById('mainScreen');
 }
 
-// ======================================================
-// ИКОНКИ
-// ======================================================
+// ========== ИКОНКИ ==========
+function renderGiftIcon() { 
+    let c = document.getElementById('giftIcon'); 
+    if (c) c.innerHTML = `<svg width="34" height="34" viewBox="0 0 25 25" fill="none"><path d="M12.7507 7.93699H8.70116C7.4577 7.93699 6.45068 6.92997 6.45068 5.68651C6.45068 4.44501 7.4577 3.43701 8.70116 3.43701C11.8507 3.43701 12.7507 7.93699 12.7507 7.93699Z" stroke="url(#grad)" stroke-width="1.5"/><path d="M12.752 7.93699H16.8011C18.0445 7.93699 19.0515 6.92997 19.0515 5.68651C19.0515 4.44501 18.0445 3.43701 16.8011 3.43701C13.6516 3.43701 12.752 7.93699 12.752 7.93699Z" stroke="url(#grad)" stroke-width="1.5"/><path d="M5.7542 7.96436H19.6384C20.6756 7.96436 21.5163 8.805 21.5163 9.84218V10.6585C21.5163 11.6373 20.7223 12.4303 19.7445 12.4303H5.86025C4.82307 12.4303 3.98242 11.5896 3.98242 10.5534V9.73516C3.98242 8.75732 4.77539 7.96436 5.7542 7.96436Z" stroke="url(#grad)" stroke-width="1.5"/><path d="M19.973 12.4565V18.9647C19.973 20.3288 18.8677 21.4351 17.5036 21.4351H7.99771C6.63361 21.4351 5.52734 20.3288 5.52734 18.9647V12.4565" stroke="url(#grad)" stroke-width="1.5"/><path d="M12.75 21.4373V12.5347" stroke="url(#grad)" stroke-width="1.5"/><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs></svg>`; 
+}
 
-function renderGiftIcon() { let c = document.getElementById('giftIcon'); if (c) c.innerHTML = `<svg width="34" height="34" viewBox="0 0 25 25" fill="none"><path d="M12.7507 7.93699H8.70116C7.4577 7.93699 6.45068 6.92997 6.45068 5.68651C6.45068 4.44501 7.4577 3.43701 8.70116 3.43701C11.8507 3.43701 12.7507 7.93699 12.7507 7.93699Z" stroke="url(#grad)" stroke-width="1.5"/><path d="M12.752 7.93699H16.8011C18.0445 7.93699 19.0515 6.92997 19.0515 5.68651C19.0515 4.44501 18.0445 3.43701 16.8011 3.43701C13.6516 3.43701 12.752 7.93699 12.752 7.93699Z" stroke="url(#grad)" stroke-width="1.5"/><path d="M5.7542 7.96436H19.6384C20.6756 7.96436 21.5163 8.805 21.5163 9.84218V10.6585C21.5163 11.6373 20.7223 12.4303 19.7445 12.4303H5.86025C4.82307 12.4303 3.98242 11.5896 3.98242 10.5534V9.73516C3.98242 8.75732 4.77539 7.96436 5.7542 7.96436Z" stroke="url(#grad)" stroke-width="1.5"/><path d="M19.973 12.4565V18.9647C19.973 20.3288 18.8677 21.4351 17.5036 21.4351H7.99771C6.63361 21.4351 5.52734 20.3288 5.52734 18.9647V12.4565" stroke="url(#grad)" stroke-width="1.5"/><path d="M12.75 21.4373V12.5347" stroke="url(#grad)" stroke-width="1.5"/><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs></svg>`; }
-function renderShieldIcon() { let c = document.getElementById('shieldIcon'); if (c) c.innerHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none"><path d="M4.31245 12.879C4.31245 19.283 11.9845 21.606 11.9845 21.606C11.9845 21.606 19.6565 19.283 19.6565 12.879C19.6565 6.474 19.9345 5.974 19.3195 5.358C18.7035 4.742 12.9905 2.75 11.9845 2.75C10.9785 2.75 5.26545 4.742 4.65045 5.358C4.13767 5.87079 4.2445 5.17473 4.29467 9" stroke="#22c55e" stroke-width="1.5"/><path d="M9.38574 11.8746L11.2777 13.7696L15.1757 9.8696" stroke="#22c55e" stroke-width="1.5"/></svg>`; }
+function renderShieldIcon() { 
+    let c = document.getElementById('shieldIcon'); 
+    if (c) c.innerHTML = `<svg width="80" height="80" viewBox="0 0 24 24" fill="none"><path d="M4.31245 12.879C4.31245 19.283 11.9845 21.606 11.9845 21.606C11.9845 21.606 19.6565 19.283 19.6565 12.879C19.6565 6.474 19.9345 5.974 19.3195 5.358C18.7035 4.742 12.9905 2.75 11.9845 2.75C10.9785 2.75 5.26545 4.742 4.65045 5.358C4.13767 5.87079 4.2445 5.17473 4.29467 9" stroke="#22c55e" stroke-width="1.5"/><path d="M9.38574 11.8746L11.2777 13.7696L15.1757 9.8696" stroke="#22c55e" stroke-width="1.5"/></svg>`; 
+}
 
-// ======================================================
-// ИНИЦИАЛИЗАЦИЯ
-// ======================================================
-
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM загружен');
 
-    // Кнопки
-    let createBtn = document.getElementById('createDealBtn');
-    if (createBtn) createBtn.onclick = () => showScreenById('createDealScreen');
-    
-    let submitBtn = document.getElementById('submitDealBtn');
-    if (submitBtn) submitBtn.onclick = createDeal;
-    
-    let copyLinkBtn = document.getElementById('copyPaymentLinkBtn');
-    if (copyLinkBtn) copyLinkBtn.onclick = copyPaymentLink;
-    
-    let copyIdBtn = document.getElementById('copyDealIdBtn');
-    if (copyIdBtn) copyIdBtn.onclick = copyDealId;
-    
-    let inviteBtn = document.getElementById('inviteBuyerBtn');
-    if (inviteBtn) inviteBtn.onclick = inviteBuyer;
-    
-    let openPayBtn = document.getElementById('openPaymentOptionsBtn');
-    if (openPayBtn) openPayBtn.onclick = togglePaymentOptions;
-    
-    let copyCard = document.getElementById('copyCardNumberBtn');
-    if (copyCard) copyCard.onclick = copyCardNumber;
-    
-    let copyWallet = document.getElementById('copyWalletBtn');
-    if (copyWallet) copyWallet.onclick = copyWalletAddress;
-    
-    let confirmCard = document.getElementById('confirmCardPaymentBtn');
-    if (confirmCard) confirmCard.onclick = confirmCardPayment;
-    
-    let confirmCrypto = document.getElementById('confirmCryptoPaymentBtn');
-    if (confirmCrypto) confirmCrypto.onclick = confirmCryptoPayment;
-    
-    let backPay = document.getElementById('backToDealFromPayment');
-    if (backPay) backPay.onclick = () => showScreenById('mainScreen');
+    document.getElementById('createDealBtn').onclick = () => showScreenById('createDealScreen');
+    document.getElementById('submitDealBtn').onclick = createDeal;
+    document.getElementById('copyPaymentLinkBtn').onclick = copyPaymentLink;
+    document.getElementById('copyDealIdBtn').onclick = copyDealId;
+    document.getElementById('inviteBuyerBtn').onclick = inviteBuyer;
+    document.getElementById('openPaymentOptionsBtn').onclick = togglePaymentOptions;
+    document.getElementById('copyCardNumberBtn').onclick = copyCardNumber;
+    document.getElementById('copyWalletBtn').onclick = copyWalletAddress;
+    document.getElementById('confirmCardPaymentBtn').onclick = confirmCardPayment;
+    document.getElementById('confirmCryptoPaymentBtn').onclick = confirmCryptoPayment;
+    document.getElementById('backToDealFromPayment').onclick = () => showScreenById('mainScreen');
     
     // Кнопка проверки оплаты (для продавца)
     let checkPaymentBtn = document.getElementById('checkPaymentStatusBtn');
     if (checkPaymentBtn) checkPaymentBtn.onclick = checkPaymentStatus;
     
-    // Кнопка "Я получил(а) подарок" на экране оплаты продавца
+    // Кнопка для продавца "Я получил(а) подарок"
     let confirmGoodsBtn = document.getElementById('confirmGoodsReceivedBtn');
     if (confirmGoodsBtn) {
         confirmGoodsBtn.onclick = () => {
             showMessage('Отправлено на проверку', 
-                'Ваше подтверждение отправлено администратору.\n\n' +
-                'Ожидайте проверки. Средства поступят на ваш счёт в течение 5-10 минут после подтверждения.\n\n' +
-                'При проблемах пишите @huntsboss');
+                'Ваше подтверждение отправлено администратору.\n\nСредства поступят на ваш счёт в течение 5-10 минут после подтверждения.\n\nПри проблемах пишите @huntsboss');
             if (currentDeal) {
                 updateDealStatus(currentDeal.id, 'completed');
                 setTimeout(() => openBuyerConfirmedScreen(currentDeal), 500);
@@ -646,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    // Кнопка "Я получил(а) подарок" для покупателя на экране ожидания NFT
+    // Кнопка для покупателя "Я получил(а) подарок"
     let confirmGoodsBuyerBtn = document.getElementById('confirmGoodsReceivedBuyerBtn');
     if (confirmGoodsBuyerBtn) {
         confirmGoodsBuyerBtn.onclick = () => {
@@ -663,7 +1506,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let backToMainFromConfirmed = document.getElementById('backToMainFromConfirmedBtn');
     if (backToMainFromConfirmed) backToMainFromConfirmed.onclick = () => showScreenById('mainScreen');
 
-    // Кнопки назад
     let backButtons = {
         'backToMainFromJoin': 'mainScreen', 'backToMainFromInfo': 'mainScreen', 'backToMainFromSupport': 'mainScreen',
         'backToMainFromCreate': 'mainScreen', 'backToMainFromProgress': 'mainScreen', 'backToMainFromSuccess': 'mainScreen',
@@ -674,25 +1516,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     for (let [id, screen] of Object.entries(backButtons)) { let el = document.getElementById(id); if (el) el.onclick = () => showScreenById(screen); }
 
-    // Кошельки
     document.querySelectorAll('[data-wallet-action="add_card"]').forEach(el => el.onclick = () => showScreenById('addCardScreen'));
     document.querySelectorAll('[data-wallet-action="add_crypto"]').forEach(el => el.onclick = () => showScreenById('selectCryptoScreen'));
     document.querySelectorAll('[data-wallet-action="add_ton"]').forEach(el => el.onclick = () => showScreenById('addTonScreen'));
     document.querySelectorAll('[data-wallet-action="list_wallets"]').forEach(el => el.onclick = () => showScreenById('listWalletsScreen'));
 
-    let saveCard = document.getElementById('saveCardBtn');
-    if (saveCard) saveCard.onclick = () => { let card = document.getElementById('cardNumber')?.value.trim(); if (!card) { showMessage('Ошибка', 'Введите номер'); return; } wallets.card = { address: card }; saveWallets(); showMessage('Успех', 'Карта сохранена'); showScreenById('walletScreen'); };
+    document.getElementById('saveCardBtn').onclick = () => { let card = document.getElementById('cardNumber')?.value.trim(); if (!card) { showMessage('Ошибка', 'Введите номер'); return; } wallets.card = { address: card }; saveWallets(); showMessage('Успех', 'Карта сохранена'); showScreenById('walletScreen'); };
 
     document.querySelectorAll('[data-crypto-type]').forEach(el => { el.onclick = () => { pendingCryptoType = el.dataset.cryptoType; let titles = { btc: 'Bitcoin', eth: 'Ethereum', usdt: 'USDT' }; document.getElementById('cryptoScreenTitle').textContent = `Добавление ${titles[pendingCryptoType]}`; showScreenById('addCryptoScreen'); }; });
 
-    let saveCrypto = document.getElementById('saveCryptoBtn');
-    if (saveCrypto) saveCrypto.onclick = () => { let addr = document.getElementById('cryptoAddress')?.value.trim(); if (!addr) { showMessage('Ошибка', 'Введите адрес'); return; } wallets[pendingCryptoType] = { address: addr }; saveWallets(); showMessage('Успех', 'Кошелек сохранен'); showScreenById('walletScreen'); };
-
-    let saveTon = document.getElementById('saveTonBtn');
-    if (saveTon) saveTon.onclick = () => { let addr = document.getElementById('tonAddress')?.value.trim(); if (!addr) { showMessage('Ошибка', 'Введите адрес'); return; } wallets.ton = { address: addr }; saveWallets(); showMessage('Успех', 'TON сохранен'); showScreenById('walletScreen'); };
-
-    let copyRef = document.getElementById('copyReferralLinkBtn');
-    if (copyRef) copyRef.onclick = () => { let link = document.getElementById('referralLinkInput')?.value; if (link) safeCopy(link); };
+    document.getElementById('saveCryptoBtn').onclick = () => { let addr = document.getElementById('cryptoAddress')?.value.trim(); if (!addr) { showMessage('Ошибка', 'Введите адрес'); return; } wallets[pendingCryptoType] = { address: addr }; saveWallets(); showMessage('Успех', 'Кошелек сохранен'); showScreenById('walletScreen'); };
+    document.getElementById('saveTonBtn').onclick = () => { let addr = document.getElementById('tonAddress')?.value.trim(); if (!addr) { showMessage('Ошибка', 'Введите адрес'); return; } wallets.ton = { address: addr }; saveWallets(); showMessage('Успех', 'TON сохранен'); showScreenById('walletScreen'); };
+    document.getElementById('copyReferralLinkBtn').onclick = () => { let link = document.getElementById('referralLinkInput')?.value; if (link) safeCopy(link); };
 
     document.querySelectorAll('.currency-item').forEach(el => { el.onclick = () => { document.querySelectorAll('.currency-item').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedCurrency = el.dataset.currency; }; });
     document.querySelector('.currency-item')?.classList.add('selected');
@@ -715,7 +1550,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGiftIcon();
     renderShieldIcon();
 
-    // ========== ГЛАВНОЕ - ОБРАБОТКА ССЫЛКИ ==========
     setTimeout(() => {
         let startParam = getStartParam();
         console.log('START PARAM:', startParam);
@@ -762,3 +1596,6 @@ function updateProgressDisplay() {
         }
     } catch(e) { console.error('updateProgressDisplay error:', e); }
 }
+</script>
+</body>
+</html>
