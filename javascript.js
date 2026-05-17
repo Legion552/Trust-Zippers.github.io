@@ -1,7 +1,3 @@
-// ======================================================
-// TRUST ZIPPER - СТАБИЛЬНАЯ ВЕРСИЯ
-// ======================================================
-
 let tg = null;
 let currentUser = null;
 
@@ -262,10 +258,11 @@ function togglePaymentOptions() {
 function copyCardNumber() { let num = document.getElementById('cardNumberDisplay')?.textContent; if (num) safeCopy(num); }
 function copyWalletAddress() { let addr = document.getElementById('walletAddress')?.textContent; if (addr) safeCopy(addr); }
 
+// ПОКУПАТЕЛЬ подтверждает оплату (имитация)
 function confirmCardPayment() { 
     showMessage('Отправлено', 'Ожидайте проверки 1-3 минуты');
     if (currentDeal) {
-        updateDealStatus(currentDeal.id, 'paid');
+        updateDealStatus(currentDeal.id, 'waiting_seller_confirm');
         setTimeout(() => { showScreenById('buyerWaitingScreen'); updateWaitingScreenData(); }, 500);
     }
 }
@@ -273,7 +270,7 @@ function confirmCardPayment() {
 function confirmCryptoPayment() { 
     showMessage('Отправлено', 'Ожидайте проверки 2-5 минут');
     if (currentDeal) {
-        updateDealStatus(currentDeal.id, 'paid');
+        updateDealStatus(currentDeal.id, 'waiting_seller_confirm');
         setTimeout(() => { showScreenById('buyerWaitingScreen'); updateWaitingScreenData(); }, 500);
     }
 }
@@ -302,7 +299,72 @@ function updateBuyerConfirmedScreenData() {
     if (document.getElementById('confirmedBuyerName')) document.getElementById('confirmedBuyerName').textContent = currentDeal.buyerUsername || 'Покупатель';
 }
 
-// ГЛАВНАЯ ФУНКЦИЯ ПРОВЕРКИ ОПЛАТЫ - УПРОЩЁННАЯ
+// ========== НОВАЯ ФУНКЦИЯ: МЕНЮ ПОДТВЕРЖДЕНИЯ ОПЛАТЫ ДЛЯ ПРОДАВЦА ==========
+function showConfirmPaymentMenu() {
+    if (!currentDeal) {
+        showMessage('Ошибка', 'Сделка не найдена');
+        return;
+    }
+    
+    // Проверяем статус - только если ожидает подтверждения от продавца
+    const updatedDeal = deals.find(d => d.id === currentDeal.id);
+    if (!updatedDeal || updatedDeal.status !== 'waiting_seller_confirm') {
+        showMessage('Ошибка', 'Нет ожидающих подтверждений оплаты по этой сделке');
+        return;
+    }
+    
+    // Показываем кастомное меню через Telegram или alert
+    if (tg && tg.showPopup) {
+        tg.showPopup({
+            title: '✅ Подтверждение оплаты',
+            message: `Покупатель ${updatedDeal.buyerUsername || 'Покупатель'} утверждает, что оплатил сделку.\n\nСумма: ${formatAmount(updatedDeal.amount, updatedDeal.currency)}\nСделка: ${updatedDeal.id}\n\nПодтверждаете получение оплаты?`,
+            buttons: [
+                { id: 'confirm', type: 'default', text: '✅ Да, оплата получена' },
+                { id: 'reject', type: 'destructive', text: '❌ Нет, оплаты не было' },
+                { id: 'cancel', type: 'cancel', text: 'Отмена' }
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'confirm') {
+                // Продавец подтвердил оплату
+                updateDealStatus(currentDeal.id, 'paid');
+                currentDeal = deals.find(d => d.id === currentDeal.id);
+                updateDealPaidScreenData();
+                showScreenById('dealPaidScreen');
+                showMessage('Оплата подтверждена', 'Статус сделки обновлен. Теперь вы можете отправить NFT.');
+                
+                // Отправляем уведомление боту
+                sendToBot('payment_confirmed', { 
+                    deal_id: currentDeal.id, 
+                    seller_id: currentUser.id,
+                    buyer_id: updatedDeal.sellerId
+                });
+            } else if (buttonId === 'reject') {
+                // Продавец отклонил оплату
+                updateDealStatus(currentDeal.id, 'payment_rejected');
+                showMessage('Оплата отклонена', 'Покупатель будет уведомлен о том, что оплата не подтверждена.');
+                sendToBot('payment_rejected', { 
+                    deal_id: currentDeal.id, 
+                    seller_id: currentUser.id 
+                });
+                setTimeout(() => showScreenById('mainScreen'), 1500);
+            }
+        });
+    } else {
+        // Fallback для обычного браузера
+        const userConfirmed = confirm(`Подтверждение оплаты по сделке ${updatedDeal.id}\n\nСумма: ${formatAmount(updatedDeal.amount, updatedDeal.currency)}\nПокупатель: ${updatedDeal.buyerUsername || 'Покупатель'}\n\nВы подтверждаете, что оплата получена?`);
+        if (userConfirmed) {
+            updateDealStatus(currentDeal.id, 'paid');
+            currentDeal = deals.find(d => d.id === currentDeal.id);
+            updateDealPaidScreenData();
+            showScreenById('dealPaidScreen');
+            showMessage('Оплата подтверждена', 'Статус сделки обновлен');
+        } else {
+            showMessage('Отклонено', 'Оплата не подтверждена');
+        }
+    }
+}
+
+// ========== ГЛАВНАЯ ФУНКЦИЯ ПРОВЕРКИ ОПЛАТЫ - ОТКРЫВАЕТ МЕНЮ ПОДТВЕРЖДЕНИЯ ==========
 function checkPaymentStatus() {
     console.log('Проверка статуса оплаты для сделки:', currentDeal?.id);
     
@@ -312,12 +374,19 @@ function checkPaymentStatus() {
     }
     
     const updatedDeal = deals.find(d => d.id === currentDeal.id);
+    currentDeal = updatedDeal;
     
-    if (updatedDeal && updatedDeal.status === 'paid') {
-        showMessage('Оплата подтверждена!', 'Покупатель оплатил сделку.');
-        currentDeal = updatedDeal;
+    if (updatedDeal && updatedDeal.status === 'waiting_seller_confirm') {
+        // Показываем меню подтверждения оплаты
+        showConfirmPaymentMenu();
+    } else if (updatedDeal && updatedDeal.status === 'paid') {
+        showMessage('Оплата уже подтверждена', 'Вы уже подтвердили оплату по этой сделке. Теперь можно отправить NFT.');
         updateDealPaidScreenData();
         showScreenById('dealPaidScreen');
+    } else if (updatedDeal && updatedDeal.status === 'waiting_buyer') {
+        showMessage('Ожидание оплаты', 'Покупатель ещё не отметил оплату. Попробуйте позже.');
+    } else if (updatedDeal && updatedDeal.status === 'payment_rejected') {
+        showMessage('Оплата отклонена', 'Вы отклонили оплату по этой сделке.');
     } else {
         showMessage('Оплата не найдена', 'Покупатель ещё не оплатил сделку. Попробуйте позже.');
     }
@@ -463,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let backPay = document.getElementById('backToDealFromPayment');
     if (backPay) backPay.onclick = () => showScreenById('mainScreen');
     
-    // Кнопка проверки оплаты
+    // Кнопка проверки оплаты - ТЕПЕРЬ ОТКРЫВАЕТ МЕНЮ ПОДТВЕРЖДЕНИЯ
     let checkPaymentBtn = document.getElementById('checkPaymentStatusBtn');
     if (checkPaymentBtn) checkPaymentBtn.onclick = checkPaymentStatus;
     
@@ -472,7 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmNftSentBtn) {
         confirmNftSentBtn.onclick = confirmNftSent;
     } else {
-        // Добавляем кнопку если её нет
         setTimeout(() => {
             const dealPaidCard = document.querySelector('#dealPaidScreen .card');
             if (dealPaidCard && !document.getElementById('confirmNftSentBtn')) {
